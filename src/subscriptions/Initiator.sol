@@ -64,7 +64,6 @@ contract Initiator is Ownable, ReentrancyGuard {
         // if (lastPaid != 0) {
         //     require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
         // }
-
         ISubExecutor(subscription.subscriber).processPayment();
     }
 

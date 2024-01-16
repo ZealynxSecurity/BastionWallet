@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import {SymTest} from "halmos-cheatcodes/SymTest.sol";
 import "../../src/subscriptions/Initiator.sol";
 import "../../src/MockERC20.sol";
 
@@ -10,7 +9,7 @@ import "../../src/MockERC20.sol";
 
 
 
-contract FoundryInitiatorTest is SymTest, Test {
+contract FoundryInitiatorTest is Test {
     Initiator initiator;
     MockERC20 public token;
 
@@ -110,7 +109,7 @@ contract FoundryInitiatorTest is SymTest, Test {
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // whithdraw
-    function test_WithdrawETH() public {
+    function test_WithdrawETH() public { //@audit-ok
          // Enviar ETH al contrato
          uint initialOwnerBalanceA = address(deployer).balance;
         uint InitiatorB = address(initiator).balance;
@@ -141,7 +140,7 @@ contract FoundryInitiatorTest is SymTest, Test {
         assertEq(finalOwnerBalance, initialOwnerBalance + 1 ether);
     }
 
-    function test_FailWithdrawETHByNonOwner() public {
+    function test_FailWithdrawETHByNonOwner() public { //@audit-ok
         // Enviar ETH al contrato
         payable(address(initiator)).transfer(1 ether);
 
