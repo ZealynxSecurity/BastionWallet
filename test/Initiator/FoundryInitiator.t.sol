@@ -111,19 +111,34 @@ contract FoundryInitiatorTest is SymTest, Test {
 /////////////////////////////////////////////////////////////////////////
 // whithdraw
     function test_WithdrawETH() public {
-        // Enviar ETH al contrato
+         // Enviar ETH al contrato
+         uint initialOwnerBalanceA = address(deployer).balance;
+        uint InitiatorB = address(initiator).balance;
+        console.log("initialOwnerBalanceA",initialOwnerBalanceA);
+        console.log("InitiatorB",InitiatorB);
+        console.log("===========");
+
         payable(address(initiator)).transfer(1 ether);
 
-        // Balance de ETH antes de la retirada
-        uint initialBalance = address(this).balance;
+        // Balance de ETH del propietario antes de la retirada
+        uint initialOwnerBalance = address(deployer).balance;
+        uint InitiatorD = address(initiator).balance;
+        console.log("initialOwnerBalance",initialOwnerBalance);
+        console.log("InitiatorD",InitiatorD);
+        console.log("===========");
 
-        // Solo el propietario debería poder retirar ETH
+
+        // Retirar ETH como propietario
         vm.prank(address(initiator.owner()));
         initiator.withdrawETH();
 
-        // Verificar que el balance de ETH se ha incrementado correctamente
-        uint finalBalance = address(this).balance;
-        assertEq(finalBalance, initialBalance + 1 ether);
+        // Verificar que el balance de ETH del propietario se ha incrementado correctamente
+        uint finalOwnerBalance = address(deployer).balance;
+        uint InitiatorF = address(initiator).balance;
+        console.log("finalOwnerBalance",finalOwnerBalance);
+        console.log("InitiatorF",InitiatorF);
+
+        assertEq(finalOwnerBalance, initialOwnerBalance + 1 ether);
     }
 
     function test_FailWithdrawETHByNonOwner() public {
@@ -137,7 +152,7 @@ contract FoundryInitiatorTest is SymTest, Test {
 
 /////////////////////////////////////////////////////////////////////////
 
-    function tes_tTWithdrawETH() public {
+    function tes_tTWithdrawETH() public { //OK
         // Configuración: Enviar ETH al contrato
         uint256 amount = 1 ether;
         payable(address(initiator)).transfer(amount);
@@ -158,14 +173,15 @@ contract FoundryInitiatorTest is SymTest, Test {
         assertEq(contractBalanceAfter, contractBalanceBefore - amount);
     }
 
-    function test_TfailWithdrawETHByNonOwner() public {
+    function test_TfailWithdrawETHByNonOwner() public { //OK
         // Configuración: Enviar ETH al contrato
         uint256 amount = 1 ether;
         payable(address(initiator)).transfer(amount);
 
         // Intentar retirar ETH como no propietario
-        address nonOwner = address(2);
+        address nonOwner = holders[0];
         vm.prank(nonOwner);
+        vm.expectRevert();
         initiator.withdrawETH(); // Esto debería fallar
 }
 
