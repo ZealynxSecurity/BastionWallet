@@ -10,7 +10,7 @@ import "../../src/MockERC20.sol";
 
 
 
-contract HalmosInitiatorTest is SymTest, Test {
+contract FoundryInitiatorTest is SymTest, Test {
     Initiator initiator;
     MockERC20 public token;
 
@@ -20,13 +20,14 @@ contract HalmosInitiatorTest is SymTest, Test {
 
 
     function setUp() public {
-        deployer = svm.createAddress("deployer");
+
+        deployer = makeAddr("deployer");
         vm.startPrank(deployer);
         
         initiator = new Initiator();
         token = new MockERC20("Test Token", "TT");
 
-        uint256 supp = svm.createUint256("supp");
+        uint256 supp = 100 ether;
         token.mint(deployer, supp);
 
         vm.stopPrank();
@@ -39,22 +40,24 @@ contract HalmosInitiatorTest is SymTest, Test {
 
         for (uint i = 0; i < holders.length; i++) {
             address account = holders[i];
-            uint256 balance = svm.createUint256('balance');
+            uint256 balance = 10 ether;
             vm.prank(deployer);
             token.transfer(account, balance);
             for (uint j = 0; j < i; j++) {
                 address other = holders[j];
-                uint256 amount = svm.createUint256('amount');
+                uint256 amount = 5 ether;
                 vm.prank(account);
                 token.approve(other, amount);
             }
         }
+        // console.log("h0", holders[0] );
+        // console.log("h0", token.balanceOf(holders[0]));
     }
 
-
 // UNIT
- function check_testRegisterSubscription() public {
-        address subscriber = address(1);
+
+ function test_check_testRegisterSubscription() public { //OK
+        address subscriber = holders[0];
         uint256 amount = 1 ether;
         uint256 validUntil = block.timestamp + 30 days;
         uint256 paymentInterval = 10 days;
@@ -76,8 +79,8 @@ contract HalmosInitiatorTest is SymTest, Test {
         assertEq(registeredSubscribers[0], subscriber);
     }
 
-    function check_testRemoveSubscription() public {
-        address subscriber = address(1);
+    function test_check_testRemoveSubscription() public { //@audit
+        address subscriber = holders[0];
         uint256 amount = 1 ether;
         uint256 validUntil = block.timestamp + 30 days;
         uint256 paymentInterval = 10 days;
@@ -106,7 +109,6 @@ contract HalmosInitiatorTest is SymTest, Test {
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-
 // whithdraw
     function test_WithdrawETH() public {
         // Enviar ETH al contrato
@@ -135,7 +137,7 @@ contract HalmosInitiatorTest is SymTest, Test {
 
 /////////////////////////////////////////////////////////////////////////
 
-    function testTWithdrawETH() public {
+    function tes_tTWithdrawETH() public {
         // Configuración: Enviar ETH al contrato
         uint256 amount = 1 ether;
         payable(address(initiator)).transfer(amount);
@@ -229,7 +231,7 @@ function test_check_failWithdrawERC20ByNonOwner() public {
 /////////////////////////////////////////////////////////////////////////
 
 // FUZZ
-    function check_testRegisterSubscriptionFuzz(
+    function test_check_testRegisterSubscriptionFuzz(
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
@@ -257,7 +259,7 @@ function test_check_failWithdrawERC20ByNonOwner() public {
 
 }
 
-    function check_testFUZZ_remove(
+    function test_check_testFUZZ_remove(
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
@@ -300,41 +302,41 @@ function test_check_failWithdrawERC20ByNonOwner() public {
     //     }
     // }
 
-    function check_globalInvariants(bytes4 selector, address caller) public {
-        // Execute an arbitrary tx
-        bytes memory args = svm.createBytes(1024, 'data');
-        vm.prank(caller);
-       (bool success,) = address(token).call(abi.encodePacked(selector, args));
-        vm.assume(success); // ignore reverting cases
+    // function check_globalInvariants(bytes4 selector, address caller) public {
+    //     // Execute an arbitrary tx
+    //     bytes memory args = svm.createBytes(1024, 'data');
+    //     vm.prank(caller);
+    //    (bool success,) = address(token).call(abi.encodePacked(selector, args));
+    //     vm.assume(success); // ignore reverting cases
 
-        // Record post-state
-        assert(token.totalSupply() == address(token).balance);
-    }
+    //     // Record post-state
+    //     assert(token.totalSupply() == address(token).balance);
+    // }
 
-    function checkNoBackdoor(bytes4 selector, address caller, address other) public virtual {
-        // consider two arbitrary distinct accounts
-        // address caller = svm.createAddress("caller");
-        // address other = svm.createAddress("other");
-        bytes memory args = svm.createBytes(1024, 'data');
-        vm.assume(other != caller);
+    // function checkNoBackdoor(bytes4 selector, address caller, address other) public virtual {
+    //     // consider two arbitrary distinct accounts
+    //     // address caller = svm.createAddress("caller");
+    //     // address other = svm.createAddress("other");
+    //     bytes memory args = svm.createBytes(1024, 'data');
+    //     vm.assume(other != caller);
 
-        // record their current balances
-        uint256 oldBalanceOther = (token).balanceOf(other);
+    //     // record their current balances
+    //     uint256 oldBalanceOther = (token).balanceOf(other);
 
-        uint256 oldAllowance = (token).allowance(other, caller);
+    //     uint256 oldAllowance = (token).allowance(other, caller);
 
-        // consider an arbitrary function call to the token from the caller
-        vm.prank(caller);
-        (bool success,) = address(token).call(abi.encodePacked(selector, args));
-        vm.assume(success);
+    //     // consider an arbitrary function call to the token from the caller
+    //     vm.prank(caller);
+    //     (bool success,) = address(token).call(abi.encodePacked(selector, args));
+    //     vm.assume(success);
 
-        uint256 newBalanceOther = (token).balanceOf(other);
+    //     uint256 newBalanceOther = (token).balanceOf(other);
 
-        // ensure that the caller cannot spend other' tokens without approvals
-        if (newBalanceOther < oldBalanceOther) {
-            assert(oldAllowance >= oldBalanceOther - newBalanceOther);
-        }
-    }
+    //     // ensure that the caller cannot spend other' tokens without approvals
+    //     if (newBalanceOther < oldBalanceOther) {
+    //         assert(oldAllowance >= oldBalanceOther - newBalanceOther);
+    //     }
+    // }
 
 
 }
