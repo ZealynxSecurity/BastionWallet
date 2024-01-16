@@ -141,33 +141,52 @@ contract HalmosInitiatorTest is SymTest, Test {
 }
 
 /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 function test_check_testWithdrawERC20() public {
     // Configuración: Enviar tokens ERC20 al contrato
-    uint256 tokenAmount = 100 ether;
-    payable(address(initiator)).transfer(tokenAmount);
+    uint256 tokenAmount = 1000 * 10**18;
+    token.transfer(address(initiator), tokenAmount);
 
     // Balance de tokens del propietario y del contrato antes de la retirada
-    uint256 ownerBalanceBefore = address(deployer).balance;
-    uint256 contractBalanceBefore = address(initiator).balance;
-
-    console.log("1",ownerBalanceBefore );
-    console.log("2",contractBalanceBefore );
+    uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
+    uint256 contractTokenBalanceBefore = token.balanceOf(address(initiator));
 
     // Retirar tokens ERC20 como propietario
     vm.prank(deployer);
     initiator.withdrawERC20(address(token));
 
     // Verificaciones
-        uint256 ownerBalanceAfter = address(deployer).balance;
-        uint256 contractBalanceAfter = address(initiator).balance;
+    uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
+    uint256 contractTokenBalanceAfter = token.balanceOf(address(initiator));
 
-        console.log("1",ownerBalanceAfter );
-        console.log("2",contractBalanceAfter );
-
-    assertEq(ownerBalanceAfter, ownerBalanceBefore + tokenAmount);
-    assertEq(contractBalanceAfter, contractBalanceBefore - tokenAmount);
+    assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
+    assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
 }
+
+function test_rrcheck_testWithdrawERC20() public {
+    // Configuración: Enviar tokens ERC20 al contrato
+    uint256 tokenAmount = 1000 * 10**18;
+    token.transfer(address(initiator), tokenAmount);
+
+    // Balance de tokens del propietario y del contrato antes de la retirada
+    uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
+    uint256 contractTokenBalanceBefore = token.balanceOf(address(initiator));
+
+    // Retirar tokens ERC20 como propietario
+    vm.prank(deployer);
+    initiator.withdrawERC20(address(token));
+
+    // Verificaciones
+    uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
+    uint256 contractTokenBalanceAfter = token.balanceOf(address(initiator));
+
+    assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
+    assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 function test_check_failWithdrawERC20ByNonOwner() public {
     // Configuración: Enviar tokens ERC20 al contrato
