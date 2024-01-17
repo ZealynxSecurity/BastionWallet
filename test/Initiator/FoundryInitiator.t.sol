@@ -296,52 +296,7 @@ function test_check_failWithdrawERC20ByNonOwner() public {
 
 // INVARIANT TEST 
 
-//inflation_remainder_within_cap()
 
-    // function _check_invariant_Foo(bytes4[] memory selectors, bytes[] memory data) public {
-    //     for (uint i = 0; i < selectors.length; i++) {
-    //         (bool success,) = address(token).call(abi.encodePacked(selectors[i], data[i]));
-    //         vm.assume(success);
-    //         assert(IERCOLAS(token).inflationRemainder() <= IERCOLAS(token).tenYearSupplyCap() - IERCOLAS(token).totalSupply());
-
-    //     }
-    // }
-
-    // function check_globalInvariants(bytes4 selector, address caller) public {
-    //     // Execute an arbitrary tx
-    //     bytes memory args = svm.createBytes(1024, 'data');
-    //     vm.prank(caller);
-    //    (bool success,) = address(token).call(abi.encodePacked(selector, args));
-    //     vm.assume(success); // ignore reverting cases
-
-    //     // Record post-state
-    //     assert(token.totalSupply() == address(token).balance);
-    // }
-
-    // function checkNoBackdoor(bytes4 selector, address caller, address other) public virtual {
-    //     // consider two arbitrary distinct accounts
-    //     // address caller = svm.createAddress("caller");
-    //     // address other = svm.createAddress("other");
-    //     bytes memory args = svm.createBytes(1024, 'data');
-    //     vm.assume(other != caller);
-
-    //     // record their current balances
-    //     uint256 oldBalanceOther = (token).balanceOf(other);
-
-    //     uint256 oldAllowance = (token).allowance(other, caller);
-
-    //     // consider an arbitrary function call to the token from the caller
-    //     vm.prank(caller);
-    //     (bool success,) = address(token).call(abi.encodePacked(selector, args));
-    //     vm.assume(success);
-
-    //     uint256 newBalanceOther = (token).balanceOf(other);
-
-    //     // ensure that the caller cannot spend other' tokens without approvals
-    //     if (newBalanceOther < oldBalanceOther) {
-    //         assert(oldAllowance >= oldBalanceOther - newBalanceOther);
-    //     }
-    // }
 
 
 }

@@ -135,6 +135,11 @@ contract HalmosInitiatorTest is SymTest, Test {
     //     }
     // }
 
+
+/////////////////////////////////////////////////////////////////////////
+// Global - Balance
+/////////////////////////////////////////////////////////////////////////
+
     function check_globalInvariants(bytes4 selector, address caller) public {
         // Execute an arbitrary tx
         bytes memory args = svm.createBytes(1024, 'data');
@@ -145,6 +150,10 @@ contract HalmosInitiatorTest is SymTest, Test {
         // Record post-state
         assert(token.totalSupply() == address(token).balance);
     }
+
+/////////////////////////////////////////////////////////////////////////
+// Global - Balance
+/////////////////////////////////////////////////////////////////////////
 
     function checkNoBackdoor(bytes4 selector, address caller, address other) public virtual {
         // consider two arbitrary distinct accounts
@@ -171,6 +180,10 @@ contract HalmosInitiatorTest is SymTest, Test {
         }
     }
 
+/////////////////////////////////////////////////////////////////////////
+// Global
+/////////////////////////////////////////////////////////////////////////
+
     function check_Invariant_globalInvariants(bytes4 selector, address caller) public {
         // Execute an arbitrary tx
         vm.prank(caller);
@@ -181,7 +194,49 @@ contract HalmosInitiatorTest is SymTest, Test {
         // assert(token.totalSupply() == address(token).balance);
     }
 
+/////////////////////////////////////////////////////////////////////////
+// withdrawERC20
+/////////////////////////////////////////////////////////////////////////
 
+    function check_testInvariant_WithdrawERC20(bytes4 selector, address caller) public {
+        // Configuración: Enviar tokens ERC20 al contrato
+
+        uint initialOwnerBalanceA = address(deployer).balance;
+        uint InitiatorB = address(initiator).balance;
+        // console.log("initialOwnerBalanceA",initialOwnerBalanceA);
+        // console.log("InitiatorB",InitiatorB);
+
+        uint256 tokenAmount = 10 ether;
+        vm.prank(deployer);
+        token.transfer(address(initiator), tokenAmount);
+
+        // Balance de tokens del propietario y del contrato antes de la retirada
+        uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
+        uint256 contractTokenBalanceBefore = token.balanceOf(address(initiator));
+        // console.log("initialOwnerBalanceA",ownerTokenBalanceBefore);
+        // console.log("InitiatorB",contractTokenBalanceBefore);
+
+        // Retirar tokens ERC20 como propietario
+        vm.prank(caller);
+        (bool success,) = address(initiator).call(gen_calldata(selector));
+        vm.assume(success);
+
+        // Verificaciones
+        uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
+        uint256 contractTokenBalanceAfter = token.balanceOf(address(initiator));
+        // console.log("initialOwnerBalanceA",ownerTokenBalanceAfter);
+        // console.log("InitiatorB",contractTokenBalanceAfter);
+
+        // assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
+        // assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
+    }
+
+/////////////////////////////////////////////////////////////////////////
+
+// HANDLER
+
+/////////////////////////////////////////////////////////////////////////
+   
     function gen_calldata(bytes4 selector) internal returns (bytes memory) {
         // Ignore view functions
         // Skip for now
