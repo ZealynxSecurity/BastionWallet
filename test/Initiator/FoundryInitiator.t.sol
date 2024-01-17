@@ -7,8 +7,6 @@ import "../../src/MockERC20.sol";
 
 // import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-
-
 contract FoundryInitiatorTest is Test {
     Initiator initiator;
     MockERC20 public token;
@@ -30,9 +28,7 @@ contract FoundryInitiatorTest is Test {
         token.mint(deployer, supp);
         token.approve(address(token), supp);
 
-
         vm.stopPrank();
-
 
         holders = new address[](3);
         holders[0] = address(0x1001);
@@ -51,8 +47,6 @@ contract FoundryInitiatorTest is Test {
                 token.approve(other, amount);
             }
         }
-        // console.log("h0", holders[0] );
-        // console.log("h0", token.balanceOf(holders[0]));
     }
 
 
@@ -61,7 +55,6 @@ contract FoundryInitiatorTest is Test {
 // UNIT TEST
 
 /////////////////////////////////////////////////////////////////////////
-
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -95,6 +88,21 @@ contract FoundryInitiatorTest is Test {
         assertEq(registeredSubscribers[0], subscriber);
     }
 
+    function test_failRegisterSubscriptionIfSubscriptionExists() public { //@audit
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validUntil = block.timestamp + 30 days;
+        uint256 paymentInterval = 10 days;
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+        // Intentar registrar la misma suscripción de nuevo
+        vm.expectRevert();
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+    }
 
 /////////////////////////////////////////////////////////////////////////
 // removeSubscription
@@ -227,7 +235,46 @@ function test_check_failWithdrawERC20ByNonOwner() public {
 }
 
 /////////////////////////////////////////////////////////////////////////
+// initiatePayment
+/////////////////////////////////////////////////////////////////////////
 
+
+function testFail_initiatePayment_ExpiredSubscription() public {
+    address subscriber = holders[0];
+    uint256 amount = 1 ether;
+    uint256 validUntil = block.timestamp + 30 days;
+    uint256 paymentInterval = 10 days;
+
+    // Registrar la suscripción como el suscriptor
+    vm.prank(subscriber);
+    initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+    // Avanzar el tiempo para que la suscripción expire
+    vm.warp(block.timestamp + 31 days);
+
+    // Intentar iniciar un pago (debería fallar debido a que la suscripción expiró)
+    vm.expectRevert("Subscription is not active");
+    initiator.initiatePayment(subscriber);
+}
+
+function test_initiatePayment_ActiveSubscription() public {
+    address subscriber = holders[0];
+    uint256 amount = 1 ether;
+    uint256 validUntil = block.timestamp + 30 days;
+    uint256 paymentInterval = 10 days;
+
+    // Registrar la suscripción como el suscriptor
+    vm.prank(subscriber);
+    initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+    // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
+    vm.warp(block.timestamp + 1 days);
+
+    // Intentar iniciar un pago (no debería fallar)
+    initiator.initiatePayment(subscriber);
+    
+    // Verificaciones adicionales pueden ser añadidas aquí si es necesario
+}
 
 
 /////////////////////////////////////////////////////////////////////////
