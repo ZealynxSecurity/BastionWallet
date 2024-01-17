@@ -88,6 +88,10 @@ contract FoundryInitiatorTest is Test {
         assertEq(registeredSubscribers[0], subscriber);
     }
 
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription > 1
+/////////////////////////////////////////////////////////////////////////
+
     function test_failRegisterSubscriptionIfSubscriptionExists() public { //@audit
         address subscriber = holders[0];
         uint256 amount = 1 ether;
@@ -102,6 +106,24 @@ contract FoundryInitiatorTest is Test {
         vm.expectRevert();
         vm.prank(subscriber);
         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription NoToken ERC20
+/////////////////////////////////////////////////////////////////////////
+    function test_failTokenFalse() public { //@audit
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validUntil = block.timestamp + 30 days;
+        uint256 paymentInterval = 10 days;
+        address tokenFalso =  address(this);
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        vm.expectRevert();
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, tokenFalso);
+
+        // Intentar registrar la misma suscripción de nuevo
     }
 
 /////////////////////////////////////////////////////////////////////////
@@ -173,6 +195,9 @@ contract FoundryInitiatorTest is Test {
         assertEq(contractBalanceAfter, contractBalanceBefore - amount);
     }
 
+/////////////////////////////////////////////////////////////////////////
+// withdrawETH No Owner
+/////////////////////////////////////////////////////////////////////////
     function test_TfailWithdrawETHByNonOwner() public { //OK
         // Configuración: Enviar ETH al contrato
         uint256 amount = 1 ether;
@@ -221,6 +246,9 @@ function test_check_testWithdrawERC20() public {
     assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
 }
 
+/////////////////////////////////////////////////////////////////////////
+// withdrawERC20 No Owner
+/////////////////////////////////////////////////////////////////////////
 function test_check_failWithdrawERC20ByNonOwner() public {
     // Configuración: Enviar tokens ERC20 al contrato
     uint256 tokenAmount = 10 ether;
