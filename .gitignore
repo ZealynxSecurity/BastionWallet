@@ -19,3 +19,10 @@ __pycache__/
 *.py[cod]
 .hypothesis/
 wake-coverage.cov
+
+# corpus
+corpus-echidna/
+corpus-medusa/
+
+# crytic-export
+crytic-export/

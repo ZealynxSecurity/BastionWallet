@@ -1,0 +1,5 @@
+allContracts: true
+testMode: 'assertion'
+coverage: true
+corpusDir: 'corpus-echidna'
+seqLen: 50
