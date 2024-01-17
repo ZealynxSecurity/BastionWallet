@@ -74,6 +74,10 @@ contract FoundryInitiatorTest is Test {
         assertEq(sub.initiator, address(initiator));
         assertEq(sub.erc20Token, address(token));
 
+
+        console.log("Token Supply",token.totalSupply());
+        console.log("Address Token Balance",address(token).balance);
+
         address[] memory registeredSubscribers = initiator.getSubscribers();
         assertEq(registeredSubscribers[0], subscriber);
     }
