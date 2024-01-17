@@ -28,6 +28,8 @@ contract FoundryInitiatorTest is Test {
 
         uint256 supp = 100 ether;
         token.mint(deployer, supp);
+        token.approve(address(token), supp);
+
 
         vm.stopPrank();
 
@@ -53,9 +55,20 @@ contract FoundryInitiatorTest is Test {
         // console.log("h0", token.balanceOf(holders[0]));
     }
 
-// UNIT
 
- function test_check_testRegisterSubscription() public { //OK
+/////////////////////////////////////////////////////////////////////////
+
+// UNIT TEST
+
+/////////////////////////////////////////////////////////////////////////
+
+
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription
+/////////////////////////////////////////////////////////////////////////
+
+ function test_check_testRegisterSubscription() public { //@audit-ok
         address subscriber = holders[0];
         uint256 amount = 1 ether;
         uint256 validUntil = block.timestamp + 30 days;
@@ -81,6 +94,11 @@ contract FoundryInitiatorTest is Test {
         address[] memory registeredSubscribers = initiator.getSubscribers();
         assertEq(registeredSubscribers[0], subscriber);
     }
+
+
+/////////////////////////////////////////////////////////////////////////
+// removeSubscription
+/////////////////////////////////////////////////////////////////////////
 
     function test_check_testRemoveSubscription() public { //@audit
         address subscriber = holders[0];
@@ -111,58 +129,27 @@ contract FoundryInitiatorTest is Test {
 
 
 /////////////////////////////////////////////////////////////////////////
+// withdrawETH
 /////////////////////////////////////////////////////////////////////////
-// whithdraw
-    function test_WithdrawETH() public { //@audit-ok
-         // Enviar ETH al contrato
-         uint initialOwnerBalanceA = address(deployer).balance;
+
+
+    function test_WithdrawETH() public { //OK
+        // Configuración: Enviar ETH al contrato
+        uint initialOwnerBalanceA = address(deployer).balance;
         uint InitiatorB = address(initiator).balance;
         console.log("initialOwnerBalanceA",initialOwnerBalanceA);
         console.log("InitiatorB",InitiatorB);
         console.log("===========");
 
-        payable(address(initiator)).transfer(1 ether);
-
-        // Balance de ETH del propietario antes de la retirada
-        uint initialOwnerBalance = address(deployer).balance;
-        uint InitiatorD = address(initiator).balance;
-        console.log("initialOwnerBalance",initialOwnerBalance);
-        console.log("InitiatorD",InitiatorD);
-        console.log("===========");
-
-
-        // Retirar ETH como propietario
-        vm.prank(address(initiator.owner()));
-        initiator.withdrawETH();
-
-        // Verificar que el balance de ETH del propietario se ha incrementado correctamente
-        uint finalOwnerBalance = address(deployer).balance;
-        uint InitiatorF = address(initiator).balance;
-        console.log("finalOwnerBalance",finalOwnerBalance);
-        console.log("InitiatorF",InitiatorF);
-
-        assertEq(finalOwnerBalance, initialOwnerBalance + 1 ether);
-    }
-
-    function test_FailWithdrawETHByNonOwner() public { //@audit-ok
-        // Enviar ETH al contrato
-        payable(address(initiator)).transfer(1 ether);
-
-        // Intentar retirar ETH como no propietario
-        vm.prank(address(0x1234)); // Dirección arbitraria que no es el propietario
-        initiator.withdrawETH(); // Esto debería fallar
-    }
-
-/////////////////////////////////////////////////////////////////////////
-
-    function tes_tTWithdrawETH() public { //OK
-        // Configuración: Enviar ETH al contrato
         uint256 amount = 1 ether;
         payable(address(initiator)).transfer(amount);
 
         // Balance del propietario antes de la retirada
         uint256 ownerBalanceBefore = address(deployer).balance;
         uint256 contractBalanceBefore = address(initiator).balance;
+        console.log("initialOwnerBalance",ownerBalanceBefore);
+        console.log("InitiatorD",contractBalanceBefore);
+        console.log("===========");
 
         // Retirar ETH como propietario
         vm.prank(deployer);
@@ -171,6 +158,8 @@ contract FoundryInitiatorTest is Test {
         // Verificaciones
         uint256 ownerBalanceAfter = address(deployer).balance;
         uint256 contractBalanceAfter = address(initiator).balance;
+        console.log("finalOwnerBalance",ownerBalanceAfter);
+        console.log("InitiatorF",contractBalanceAfter);
 
         assertEq(ownerBalanceAfter, ownerBalanceBefore + amount);
         assertEq(contractBalanceAfter, contractBalanceBefore - amount);
@@ -189,16 +178,26 @@ contract FoundryInitiatorTest is Test {
 }
 
 /////////////////////////////////////////////////////////////////////////
+// withdrawERC20
 /////////////////////////////////////////////////////////////////////////
 
 function test_check_testWithdrawERC20() public {
     // Configuración: Enviar tokens ERC20 al contrato
-    uint256 tokenAmount = 1000 * 10**18;
+
+    uint initialOwnerBalanceA = address(deployer).balance;
+    uint InitiatorB = address(initiator).balance;
+    console.log("initialOwnerBalanceA",initialOwnerBalanceA);
+    console.log("InitiatorB",InitiatorB);
+
+    uint256 tokenAmount = 10 ether;
+    vm.prank(deployer);
     token.transfer(address(initiator), tokenAmount);
 
     // Balance de tokens del propietario y del contrato antes de la retirada
     uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
     uint256 contractTokenBalanceBefore = token.balanceOf(address(initiator));
+    console.log("initialOwnerBalanceA",ownerTokenBalanceBefore);
+    console.log("InitiatorB",contractTokenBalanceBefore);
 
     // Retirar tokens ERC20 como propietario
     vm.prank(deployer);
@@ -207,49 +206,36 @@ function test_check_testWithdrawERC20() public {
     // Verificaciones
     uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
     uint256 contractTokenBalanceAfter = token.balanceOf(address(initiator));
+    console.log("initialOwnerBalanceA",ownerTokenBalanceAfter);
+    console.log("InitiatorB",contractTokenBalanceAfter);
 
     assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
     assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
 }
-
-function test_rrcheck_testWithdrawERC20() public {
-    // Configuración: Enviar tokens ERC20 al contrato
-    uint256 tokenAmount = 1000 * 10**18;
-    token.transfer(address(initiator), tokenAmount);
-
-    // Balance de tokens del propietario y del contrato antes de la retirada
-    uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
-    uint256 contractTokenBalanceBefore = token.balanceOf(address(initiator));
-
-    // Retirar tokens ERC20 como propietario
-    vm.prank(deployer);
-    initiator.withdrawERC20(address(token));
-
-    // Verificaciones
-    uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
-    uint256 contractTokenBalanceAfter = token.balanceOf(address(initiator));
-
-    assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
-    assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
-}
-
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
 
 function test_check_failWithdrawERC20ByNonOwner() public {
     // Configuración: Enviar tokens ERC20 al contrato
-    uint256 tokenAmount = 1000 ether;
-    payable(address(initiator)).transfer(tokenAmount);
+    uint256 tokenAmount = 10 ether;
+    vm.prank(deployer);
+    token.transfer(address(initiator), tokenAmount);
 
     // Intentar retirar tokens ERC20 como no propietario
-    address nonOwner = address(2);
+    address nonOwner = holders[0];
     vm.prank(nonOwner);
+    vm.expectRevert();
     initiator.withdrawERC20(address(token)); // Esto debería fallar
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-// FUZZ
+
+
+/////////////////////////////////////////////////////////////////////////
+
+// FUZZ TEST
+
+/////////////////////////////////////////////////////////////////////////
+
     function test_check_testRegisterSubscriptionFuzz(
         address _subscriber,
         uint256 _amount,
