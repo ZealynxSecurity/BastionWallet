@@ -123,7 +123,6 @@ contract FoundryInitiatorTest is Test {
         vm.expectRevert();
         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, tokenFalso);
 
-        // Intentar registrar la misma suscripción de nuevo
     }
 
 /////////////////////////////////////////////////////////////////////////
