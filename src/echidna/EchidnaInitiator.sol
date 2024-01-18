@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 import "../subscriptions/Initiator.sol";
 import "../MockERC20.sol";
 import "./EchidnaConfig.sol";
+import "./Debugger.sol";
 
 contract EchidnaInitiator is EchidnaConfig {
     Initiator public initiator;
     MockERC20 public token;
-    address internal _erc20Token;
+    address public _erc20Token;
 
-    address constant _subscriber = USER1;
+    address public _subscriber = msg.sender;
 
     constructor() {
         initiator = new Initiator();
@@ -27,8 +28,7 @@ contract EchidnaInitiator is EchidnaConfig {
         uint256 _paymentInterval
     ) public {
         // Assumptions to ensure valid inputs
-        require(_amount == 0 || _paymentInterval == 0);
-        require(_validUntil > block.timestamp);
+        if(_amount == 0 || _paymentInterval == 0) return;
 
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
@@ -43,7 +43,8 @@ contract EchidnaInitiator is EchidnaConfig {
         uint256 _paymentInterval
     ) public {
         // Test for subscription registration
-        require(_validUntil > block.timestamp);
+        if(_amount == 0 || _paymentInterval == 0) return;
+        // require(_validUntil > block.timestamp);
         
 
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
@@ -60,8 +61,8 @@ contract EchidnaInitiator is EchidnaConfig {
         uint256 _paymentInterval,
         uint256 _validUntil
     ) public {
-        require(_amount == 0 || _paymentInterval == 0);
-        require(_validUntil > block.timestamp);
+        if(_amount == 0 || _paymentInterval == 0) return;
+        // require(_validUntil > block.timestamp);
 
         
         // Simulate a different address trying to register the subscription
@@ -88,8 +89,8 @@ contract EchidnaInitiator is EchidnaConfig {
         uint256 _paymentInterval,
         uint256 _validUntil
     ) public {
-        require(_amount == 0 || _paymentInterval == 0);
-        require(_validUntil > block.timestamp);
+        if(_amount == 0 || _paymentInterval == 0) return;
+        // require(_validUntil > block.timestamp);
 
         // Registering a subscription first
         hevm.prank(_subscriber);
@@ -111,5 +112,59 @@ contract EchidnaInitiator is EchidnaConfig {
         assert(sub.amount == 0);
     }
 
+        // Test that initiatePayment reverts if block.timestamp is outside the valid range
+    function test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
+        if(_amount == 0 || _paymentInterval == 0) return;
 
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 _validUntil = _validAfter + 10 days;
+
+        // Registering a subscription
+        hevm.prank(_subscriber);
+        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+
+        // Warp to a time before the subscription is valid
+        hevm.warp(_validAfter - 10);
+        hevm.prank(_subscriber);
+        try initiator.initiatePayment(_subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time after the subscription has expired
+        hevm.warp(_validUntil + 10);
+        hevm.prank(_subscriber);
+        try initiator.initiatePayment(_subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time within the valid range and ensure it doesn't revert
+        hevm.warp(_validAfter + 1);
+        hevm.prank(_subscriber);
+        try initiator.initiatePayment(_subscriber) {
+            // Expected behavior, the transaction should succeed
+        } catch {
+            assert(false);
+        }
+    }
+
+    // Test that registerSubscription reverts if _validUntil is smaller than block.timestamp
+    function test_register_with_past_validUntil(uint256 _amount, uint256 _paymentInterval) public {
+        if(_amount == 0 || _paymentInterval == 0) return;
+
+        uint256 _validUntil = block.timestamp - 1 days; // Setting validUntil in the past
+
+        hevm.prank(_subscriber);
+        try initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+    }
 }
