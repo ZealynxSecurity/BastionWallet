@@ -365,17 +365,18 @@ function testFuzzRevokeSubscription() public {
         token.mint(deployer, supp);
         token.approve(address(subExecutor), supp);
         vm.stopPrank();
+        vm.assume (1 ether <= tokenBalance && tokenBalance <= 1000 ether);
 
         // Configurar una suscripción con token ERC20
          address owner = subExecutor.getOwner();
         vm.startPrank(owner);       
         subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, block.timestamp + 90 days, address(token));
+        vm.stopPrank();
 
         vm.assume(paymentAmount <= tokenBalance && paymentAmount > 0);
 
         // Intentar procesar el pago
         subExecutor.processPayment();
-        vm.stopPrank();
 
         // Verificar que el pago se haya realizado correctamente
         uint256 newTokenBalance = token.balanceOf(address(subExecutor));

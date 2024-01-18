@@ -31,7 +31,7 @@ contract Initiator is Ownable, ReentrancyGuard {
             paymentInterval: _paymentInterval,
             subscriber: _subscriber,
             initiator: address(this),
-            erc20TokensValid: _erc20Token == address(0) ? false : true,
+            erc20TokensValid: _erc20Token == address(0) ? false : true, //@audit
             erc20Token: _erc20Token
         });
         subscriptionBySubscriber[_subscriber] = sub;
