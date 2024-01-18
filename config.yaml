@@ -2,4 +2,5 @@ allContracts: true
 testMode: 'assertion'
 coverage: true
 corpusDir: 'corpus-echidna'
-seqLen: 50
+seqLen: 100
+testLimit: 100000

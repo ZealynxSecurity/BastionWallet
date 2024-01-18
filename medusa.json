@@ -38,8 +38,8 @@
         }
       },
       "propertyTesting": {
-        "enabled": true,
-        "testPrefixes": ["echidna_"]
+        "enabled": false,
+        "testPrefixes": ["fuzz_"]
       },
       "optimizationTesting": {
         "enabled": false,
