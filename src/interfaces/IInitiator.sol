@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
-interface Initiator {
+interface IInitiator {
     // mapping(address => ISubExecutor.SubStorage[]) public subscriptions;
 
     function registerSubscription(

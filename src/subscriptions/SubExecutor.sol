@@ -20,6 +20,10 @@ contract SubExecutor is ReentrancyGuard {
         }
     }
 
+    function getOwner() public view returns (address) {
+        return getKernelStorage().owner;
+    }
+
     // Modifier to check if the function is called by the entry point, the contract itself or the owner
     modifier onlyFromEntryPointOrOwnerOrSelf() {
         address owner = getKernelStorage().owner;
@@ -49,7 +53,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -72,14 +76,14 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }
 
     function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
         delete getKernelStorage().subscriptions[_initiator];
-        Initiator(_initiator).removeSubscription(address(this));
+        IInitiator(_initiator).removeSubscription(address(this));
         emit revokedApproval(_initiator);
     }
 
