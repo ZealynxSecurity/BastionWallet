@@ -276,6 +276,7 @@ contract HalmosInitiatorTest is SymTest, Test {
         uint256 warpToTime = block.timestamp + 1 days;
         vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
         vm.warp(warpToTime);
+// vm.warp(svm.createUint(64, "timestamp2"))
 
         // Intentar iniciar un pago (no debería fallar)
         vm.prank(subscriber);

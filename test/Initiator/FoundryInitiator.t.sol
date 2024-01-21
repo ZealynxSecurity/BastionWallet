@@ -109,6 +109,34 @@ contract FoundryInitiatorTest is Test {
     }
 
 /////////////////////////////////////////////////////////////////////////
+// registerSubscription > 1 loops
+/////////////////////////////////////////////////////////////////////////
+    function testFuzzMultipleSubscriptions() public {
+        address subscriber = holders[0];
+        uint256 iterations = 5; // Número de veces que quieres registrar al suscriptor
+
+        for (uint256 i = 0; i < iterations; i++) {
+            // Generar valores aleatorios para cada registro
+            uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
+            uint256 validUntil = block.timestamp + (1 days + i * 1 days);
+            uint256 paymentInterval = (1 days + i * 1 hours);
+
+            // Asegurar que los valores son razonables
+            vm.assume(amount > 0);
+            vm.assume(validUntil > block.timestamp);
+            vm.assume(paymentInterval > 0);
+
+            // Registrar la suscripción
+            vm.prank(subscriber);
+            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+            address[] memory registeredSubscribers = initiator.getSubscribers();
+            console.log("Subscriber i",registeredSubscribers[i]);
+            console.log("===================");
+            assertEq(registeredSubscribers[i], subscriber);
+        }
+    }
+
+/////////////////////////////////////////////////////////////////////////
 // registerSubscription NoToken ERC20
 /////////////////////////////////////////////////////////////////////////
     function test_failTokenFalse() public { //@audit
@@ -284,12 +312,23 @@ function testFail_initiatePayment_ExpiredSubscription() public {
     initiator.initiatePayment(subscriber);
 }
 
+/////////////////////////////////////////////////////////////////////////
+// initiatePayment loop and token.transfer
+/////////////////////////////////////////////////////////////////////////
+
     function test_initiatePayment_ActiveSubscription() public {
-        address subscriber = holders[0];
+        address subscriber = deployer;
         uint256 amount = 1 ether;
         uint256 _validAfter = block.timestamp + 1 days;
         uint256 validUntil = _validAfter + 10 days;
         uint256 paymentInterval = 10 days;
+
+
+
+        uint256 tokenAmount = 10 ether;
+        vm.prank(subscriber);
+        token.transfer(address(initiator), tokenAmount);
+
 
         // Registrar la suscripción
         vm.prank(subscriber);
@@ -310,6 +349,41 @@ function testFail_initiatePayment_ExpiredSubscription() public {
 
         assertTrue(success, "La llamada a initiatePayment haber sido exitosa");
     }
+
+
+/////////////////////////////////////////////////////////////////////////
+// initiatePayment loop
+/////////////////////////////////////////////////////////////////////////
+
+    function test_other_initiatePayment_ActiveSubscription() public {
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validAfter = block.timestamp + 1 days;
+        uint256 validUntil = validAfter + 10 days;
+        uint256 paymentInterval = 10 days;
+
+        // Registrar la suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+        // Avanzar al momento en que la suscripción está activa pero no ha expirado
+        uint256 warpToTime = validAfter + 1; // Ajuste aquí para estar seguro de que está dentro del rango
+        vm.warp(warpToTime);
+
+        // Intentar iniciar un pago
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // La llamada fue exitosa, no se hace nada aquí
+        } catch Error(string memory reason) {
+            // Capturar y emitir el mensaje de error si la transacción falla
+            console.log("initiatePayment fallo con el error: ", reason);
+            revert("La llamada a initiatePayment deberia haber sido exitosa");
+        } catch {
+            // Para otros tipos de fallos (por ejemplo, fallos de bajo nivel)
+            console.log("La llamada a initiatePayment fallo por una razon desconocida");
+            revert("La llamada a initiatePayment fallo por una razon desconocida");
+        }
+}
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -490,33 +564,7 @@ function testFail_initiatePayment_ExpiredSubscription() public {
         }
     }
 
-/////////////////////////////////////////////////////////////////////////
-// registerSubscription > 1
-/////////////////////////////////////////////////////////////////////////
-    function testFuzzMultipleSubscriptions() public {
-        address subscriber = holders[0];
-        uint256 iterations = 5; // Número de veces que quieres registrar al suscriptor
 
-        for (uint256 i = 0; i < iterations; i++) {
-            // Generar valores aleatorios para cada registro
-            uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
-            uint256 validUntil = block.timestamp + (1 days + i * 1 days);
-            uint256 paymentInterval = (1 days + i * 1 hours);
-
-            // Asegurar que los valores son razonables
-            vm.assume(amount > 0);
-            vm.assume(validUntil > block.timestamp);
-            vm.assume(paymentInterval > 0);
-
-            // Registrar la suscripción
-            vm.prank(subscriber);
-            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
-            address[] memory registeredSubscribers = initiator.getSubscribers();
-            console.log("Subscriber i",registeredSubscribers[i]);
-            console.log("===================");
-            assertEq(registeredSubscribers[i], subscriber);
-        }
-    }
 
 
 
