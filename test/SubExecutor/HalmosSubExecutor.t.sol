@@ -278,7 +278,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 
         // Verificar que la suscripción haya sido revocada
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
-        assertEq(sub.initiator, address(0)); // O alguna otra verificación de que la suscripción fue revocada
+        assert(sub.initiator == address(0)); // O alguna otra verificación de que la suscripción fue revocada
     }
 
 // /////////////////////////////////////////////////////////////////////////

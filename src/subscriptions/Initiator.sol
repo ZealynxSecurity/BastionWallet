@@ -5,6 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/ISubExecutor.sol";
+import "forge-std/console.sol";
 
 // import "../../lib/solidity_utils/lib.sol";
 
@@ -31,7 +32,7 @@ contract Initiator is Ownable, ReentrancyGuard {
             paymentInterval: _paymentInterval,
             subscriber: _subscriber,
             initiator: address(this),
-            erc20TokensValid: _erc20Token == address(0) ? false : true,
+            erc20TokensValid: _erc20Token == address(0) ? false : true, //@audit
             erc20Token: _erc20Token
         });
         subscriptionBySubscriber[_subscriber] = sub;
@@ -55,6 +56,23 @@ contract Initiator is Ownable, ReentrancyGuard {
     // Function that calls processPayment from sub executor and initiates a payment
     function initiatePayment(address _subscriber) public nonReentrant {
         ISubExecutor.SubStorage storage subscription = subscriptionBySubscriber[_subscriber];
+
+        console.log("============" );
+        console.log("validUntil ",subscription.validUntil);
+        console.log("> block.timestamp",block.timestamp );
+        console.log("============" );
+
+        console.log("validAfter ",subscription.validAfter );
+        console.log("< block.timestamp",block.timestamp );
+        console.log("============" );
+
+        console.log("amount > 0? =>",subscription.amount );
+        console.log("============" );
+
+        console.log("paymentInterval > 0? =>",subscription.paymentInterval );
+        console.log("============" );
+        console.log("/////////////////////////////////////////" );
+
         require(subscription.validUntil > block.timestamp, "Subscription is not active");
         require(subscription.validAfter < block.timestamp, "Subscription is not active");
         require(subscription.amount > 0, "Subscription amount is 0");

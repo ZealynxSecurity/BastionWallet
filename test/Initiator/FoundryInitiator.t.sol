@@ -108,15 +108,43 @@ contract FoundryInitiatorTest is Test {
 //         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
 //     }
 
-// /////////////////////////////////////////////////////////////////////////
-// // registerSubscription NoToken ERC20
-// /////////////////////////////////////////////////////////////////////////
-//     function test_failTokenFalse() public { //@audit
-//         address subscriber = holders[0];
-//         uint256 amount = 1 ether;
-//         uint256 validUntil = block.timestamp + 30 days;
-//         uint256 paymentInterval = 10 days;
-//         address tokenFalso =  address(this);
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription > 1 loops
+/////////////////////////////////////////////////////////////////////////
+    function testFuzzMultipleSubscriptions() public {
+        address subscriber = holders[0];
+        uint256 iterations = 5; // Número de veces que quieres registrar al suscriptor
+
+        for (uint256 i = 0; i < iterations; i++) {
+            // Generar valores aleatorios para cada registro
+            uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
+            uint256 validUntil = block.timestamp + (1 days + i * 1 days);
+            uint256 paymentInterval = (1 days + i * 1 hours);
+
+            // Asegurar que los valores son razonables
+            vm.assume(amount > 0);
+            vm.assume(validUntil > block.timestamp);
+            vm.assume(paymentInterval > 0);
+
+            // Registrar la suscripción
+            vm.prank(subscriber);
+            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+            address[] memory registeredSubscribers = initiator.getSubscribers();
+            console.log("Subscriber i",registeredSubscribers[i]);
+            console.log("===================");
+            assertEq(registeredSubscribers[i], subscriber);
+        }
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription NoToken ERC20
+/////////////////////////////////////////////////////////////////////////
+    function test_failTokenFalse() public { //@audit
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validUntil = block.timestamp + 30 days;
+        uint256 paymentInterval = 10 days;
+        address tokenFalso =  address(this);
 
 //         // Registrar una suscripción
 //         vm.prank(subscriber);
@@ -279,114 +307,264 @@ contract FoundryInitiatorTest is Test {
 //     // Avanzar el tiempo para que la suscripción expire
 //     vm.warp(block.timestamp + 31 days);
 
-//     // Intentar iniciar un pago (debería fallar debido a que la suscripción expiró)
-//     vm.expectRevert("Subscription is not active");
-//     initiator.initiatePayment(subscriber);
-// }
+    // Intentar iniciar un pago (debería fallar debido a que la suscripción expiró)
+    vm.expectRevert("Subscription is not active");
+    initiator.initiatePayment(subscriber);
+}
 
-// function test_initiatePayment_ActiveSubscription() public {
-//     address subscriber = holders[0];
-//     uint256 amount = 1 ether;
-//     uint256 validUntil = block.timestamp + 30 days;
-//     uint256 paymentInterval = 10 days;
+/////////////////////////////////////////////////////////////////////////
+// initiatePayment loop and token.transfer
+/////////////////////////////////////////////////////////////////////////
 
-//     // Registrar la suscripción como el suscriptor
-//     vm.prank(subscriber);
-//     initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
-
-//     // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
-//     vm.warp(block.timestamp + 1 days);
-
-//     // Intentar iniciar un pago (no debería fallar)
-//     initiator.initiatePayment(subscriber);
-    
-//     // Verificaciones adicionales pueden ser añadidas aquí si es necesario
-// }
+    function test_initiatePayment_ActiveSubscription() public {
+        address subscriber = deployer;
+        uint256 amount = 1 ether;
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 validUntil = _validAfter + 10 days;
+        uint256 paymentInterval = 10 days;
 
 
-// /////////////////////////////////////////////////////////////////////////
 
-// // FUZZ TEST
-
-// /////////////////////////////////////////////////////////////////////////
-
-//     function test_check_testRegisterSubscriptionFuzz(
-//         address _subscriber,
-//         uint256 _amount,
-//         uint256 _validUntil,
-//         uint256 _paymentInterval,
-//         address _erc20Token
-//     ) public {
-//         vm.assume(_amount > 0 && _paymentInterval > 0);
-//         vm.prank(_subscriber);
-
-//         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
-
-//         // Add assertions here
-//         address[] memory registeredSubscribers = initiator.getSubscribers();
-//         assertEq(registeredSubscribers[0], _subscriber);
-
-//       // Verificaciones
-//         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
-//         assertEq(sub.amount, _amount);
-//         assertEq(sub.validUntil, _validUntil);
-//         assertEq(sub.paymentInterval, _paymentInterval);
-//         assertEq(sub.subscriber, _subscriber);
-//         assertEq(sub.initiator, address(initiator));
-//         assertEq(sub.erc20Token, address(_erc20Token));
-//         assertEq(sub.erc20TokensValid, _erc20Token != address(0));
-
-// }
-
-//     function test_check_testFUZZ_remove(
-//         address _subscriber,
-//         uint256 _amount,
-//         uint256 _validUntil,
-//         uint256 _paymentInterval,
-//         address _erc20Token) public {
-
-//         vm.assume(_amount > 0 && _paymentInterval > 0);
-//         vm.startPrank(_subscriber);
-
-//         // Registrar y luego eliminar la suscripción como el suscriptor
-//         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
-//         initiator.removeSubscription(_subscriber);
-
-//         // Verificaciones
-//         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
-//         assertEq(sub.subscriber, address(0));
+        uint256 tokenAmount = 10 ether;
+        vm.prank(subscriber);
+        token.transfer(address(initiator), tokenAmount);
 
 
-//         address[] memory registeredSubscribers = initiator.getSubscribers();
-//         bool isSubscriberPresent = false;
-//         for (uint i = 0; i < registeredSubscribers.length; i++) {
-//             if (registeredSubscribers[i] == _subscriber) {
-//                 isSubscriberPresent = true;
-//                 break;
-//             }
-//         }
-//         assertFalse(isSubscriberPresent, "Subscriber should be removed from the subscribers array");
-//     }
+        // Registrar la suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
 
-    function test_subscription_registration_DoS() public {
-        address _subscriber = holders[0];
-        uint256 _amount = 1;
-        uint256 _validUntil = 5;
-        uint256 _paymentInterval = 1;
+        // Avanzar al momento en que la suscripción está activa pero no ha expirado
+        uint256 warpToTime = _validAfter + 10;
+        vm.warp(warpToTime);
 
-        uint256 repeat = 20000000;
-
-        for (uint256 index; index < repeat; index++) {
-            vm.prank(_subscriber);
-            initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, address(token));
+        // Intentar iniciar un pago
+        vm.prank(subscriber);
+        bool success;
+        try initiator.initiatePayment(subscriber) {
+            success = true;
+        } catch {
+            success = false;
         }
-        
-        vm.prank(_subscriber);
-        vm.expectRevert();
-        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, address(token));    
+
+        assertTrue(success, "La llamada a initiatePayment haber sido exitosa");
     }
 
-// INVARIANT TEST 
+
+/////////////////////////////////////////////////////////////////////////
+// initiatePayment loop
+/////////////////////////////////////////////////////////////////////////
+
+    function test_other_initiatePayment_ActiveSubscription() public {
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validAfter = block.timestamp + 1 days;
+        uint256 validUntil = validAfter + 10 days;
+        uint256 paymentInterval = 10 days;
+
+        // Registrar la suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+        // Avanzar al momento en que la suscripción está activa pero no ha expirado
+        uint256 warpToTime = validAfter + 1; // Ajuste aquí para estar seguro de que está dentro del rango
+        vm.warp(warpToTime);
+
+        // Intentar iniciar un pago
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // La llamada fue exitosa, no se hace nada aquí
+        } catch Error(string memory reason) {
+            // Capturar y emitir el mensaje de error si la transacción falla
+            console.log("initiatePayment fallo con el error: ", reason);
+            revert("La llamada a initiatePayment deberia haber sido exitosa");
+        } catch {
+            // Para otros tipos de fallos (por ejemplo, fallos de bajo nivel)
+            console.log("La llamada a initiatePayment fallo por una razon desconocida");
+            revert("La llamada a initiatePayment fallo por una razon desconocida");
+        }
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+
+// FUZZ TEST
+
+/////////////////////////////////////////////////////////////////////////
+
+    function test_check_testRegisterSubscriptionFuzz(
+        address _subscriber,
+        uint256 _amount,
+        uint256 _validUntil,
+        uint256 _paymentInterval,
+        address _erc20Token
+    ) public {
+        vm.assume(_amount > 0 && _paymentInterval > 0);
+        vm.prank(_subscriber);
+
+        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+
+        // Add assertions here
+        address[] memory registeredSubscribers = initiator.getSubscribers();
+        assertEq(registeredSubscribers[0], _subscriber);
+
+      // Verificaciones
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
+        assertEq(sub.amount, _amount);
+        assertEq(sub.validUntil, _validUntil);
+        assertEq(sub.paymentInterval, _paymentInterval);
+        assertEq(sub.subscriber, _subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(_erc20Token));
+        assertEq(sub.erc20TokensValid, _erc20Token != address(0));
+
+}
+
+    function test_check_testFUZZ_remove(
+        address _subscriber,
+        uint256 _amount,
+        uint256 _validUntil,
+        uint256 _paymentInterval,
+        address _erc20Token) public {
+
+        vm.assume(_amount > 0 && _paymentInterval > 0);
+        vm.startPrank(_subscriber);
+
+        // Registrar y luego eliminar la suscripción como el suscriptor
+        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+        initiator.removeSubscription(_subscriber);
+
+        // Verificaciones
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
+        assertEq(sub.subscriber, address(0));
+
+
+        address[] memory registeredSubscribers = initiator.getSubscribers();
+        bool isSubscriberPresent = false;
+        for (uint i = 0; i < registeredSubscribers.length; i++) {
+            if (registeredSubscribers[i] == _subscriber) {
+                isSubscriberPresent = true;
+                break;
+            }
+        }
+        assertFalse(isSubscriberPresent, "Subscriber should be removed from the subscribers array");
+    }
+
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription NoToken ERC20 => true
+/////////////////////////////////////////////////////////////////////////
+    function test_primer_failTokenFalse(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken) public {
+
+
+        address subscriber = holders[0];
+        amount = bound(amount, 1 ether, 1000 ether);
+        paymentInterval = bound(paymentInterval, 1 days, 365 days);
+        uint256 validUntil = block.timestamp + bound(_validUntil, 1 days, 365 days);
+        
+        vm.assume (FalseToken != address(token));
+        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        vm.expectRevert();
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken);
+
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// Nunca se llama a _processNativePayment a no ser que sea address(0)
+/////////////////////////////////////////////////////////////////////////
+    function test_Fuzz_tinitiatePayment_ActiveSubscription(        
+            uint256 amount,
+            uint256 _validUntil,
+            uint256 paymentInterval,
+            address FalseToken) public {
+
+
+            address subscriber = holders[0];
+            uint256 _validAfter = block.timestamp + 1 days;
+            uint256 validUntil = _validAfter + 10 days;
+
+            amount = bound(amount, 1 ether, 1000 ether);
+            paymentInterval = bound(paymentInterval, 1 days, 365 days);
+
+            // Registrar la suscripción
+            vm.prank(subscriber);
+            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+            assertEq(sub.amount, amount);
+            assertEq(sub.validUntil, validUntil);
+            assertEq(sub.paymentInterval, paymentInterval);
+            assertEq(sub.subscriber, subscriber);
+            assertEq(sub.initiator, address(initiator));
+            assertEq(sub.erc20Token, address(FalseToken));
+            assertEq(sub.erc20TokensValid, FalseToken != address(0));
+            // Avanzar al momento en que la suscripción está activa pero no ha expirado
+            uint256 warpToTime = _validAfter + 10;
+            vm.warp(warpToTime);
+
+            // Intentar iniciar un pago
+            vm.prank(subscriber);
+            bool success;
+            try initiator.initiatePayment(subscriber) {
+                success = true;
+            } catch {
+                success = false;
+            }
+
+            assertTrue(success, "La llamada a initiatePayment haber sido exitosa");
+        }
+
+/////////////////////////////////////////////////////////////////////////
+// Nunca se llama a _processNativePayment a no ser que sea address(0)
+/////////////////////////////////////////////////////////////////////////
+    function test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
+        if(_amount == 0 || _paymentInterval == 0) return;
+
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 _validUntil = _validAfter + 10 days;
+        address subscriber = holders[0];
+
+        // Registering a subscription
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, _amount, _validUntil, _paymentInterval, address(token));
+
+        // Warp to a time before the subscription is valid
+        vm.warp(_validAfter - 10);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time after the subscription has expired
+        vm.warp(_validUntil + 10);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time within the valid range and ensure it doesn't revert
+        vm.warp(_validAfter + 1);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // Expected behavior, the transaction should succeed
+        } catch {
+            assert(false);
+        }
+    }
+
+
 
 
 

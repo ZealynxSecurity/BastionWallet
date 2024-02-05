@@ -87,6 +87,36 @@ contract HalmosInitiatorTest is SymTest, Test {
 
 }
 
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription > 1
+/////////////////////////////////////////////////////////////////////////
+    function check_testFuzzMultipleSubscriptions() public {
+        address subscriber = holders[0];
+        uint256 iterations = 2; // Número de veces que quieres registrar al suscriptor
+
+        for (uint256 i = 0; i < iterations; i++) {
+            // Generar valores aleatorios para cada registro
+
+            uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
+            uint256 validUntil = block.timestamp + (1 days + i * 1 days);
+            uint256 paymentInterval = (1 days + i * 1 hours);
+
+            // Asegurar que los valores son razonables
+            vm.assume(amount > 0);
+            vm.assume(validUntil > block.timestamp);
+            vm.assume(paymentInterval > 0);
+
+            // Registrar la suscripción
+            vm.prank(subscriber);
+            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+            address[] memory registeredSubscribers = initiator.getSubscribers();
+            console.log("Subscriber i",registeredSubscribers[i]);
+            console.log("===================");
+            assertEq(registeredSubscribers[i], subscriber);
+        }
+    }
+
+
     function check_testFUZZ_remove(
         address _subscriber,
         uint256 _amount,
@@ -117,6 +147,192 @@ contract HalmosInitiatorTest is SymTest, Test {
         assertFalse(isSubscriberPresent, "Subscriber should be removed from the subscribers array");
     }
 
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription Token != ERC20  => erc20TokensValid == true
+/////////////////////////////////////////////////////////////////////////
+    function check_test_failTokenFalse(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken) public {
+
+        address subscriber = holders[0];
+
+        vm.assume (1 ether <= amount && amount <= 1000 ether);
+        vm.assume (1 days <= paymentInterval && paymentInterval <= 365 days);
+        vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
+        vm.assume (FalseToken != address(token));
+
+        uint256 validUntil = block.timestamp + _validUntil;
+        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        bool hasFailed = false;
+        try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
+            // Intencionadamente vacío, esperando que no haya revert
+        } catch {
+            hasFailed = true; // Se ha detectado un fallo
+        }
+
+        // Aserción para verificar si hubo un fallo
+        if (hasFailed) {
+            fail("La llamada a registerSubscription ha revertido de manera inesperada.");
+        }
+
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+        assertEq(sub.amount, amount);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.paymentInterval, paymentInterval);
+        assertEq(sub.subscriber, subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(FalseToken));
+        assertEq(sub.erc20TokensValid, FalseToken != address(0));
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription NoToken ERC20 => address(0) => erc20TokensValid == false
+/////////////////////////////////////////////////////////////////////////
+    function check_test_Address0_failTokenFalse(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address address0) public {
+
+        address subscriber = holders[0];
+
+        vm.assume (1 ether <= amount && amount <= 1000 ether);
+        vm.assume (1 days <= paymentInterval && paymentInterval <= 365 days);
+        vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
+        vm.assume (address0 == address(0));
+
+        uint256 validUntil = block.timestamp + _validUntil;
+        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
+
+        vm.prank(subscriber);
+        bool hasFailed = false;
+        try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address0) {
+        } catch {
+            hasFailed = true; 
+        }
+
+        if (hasFailed) {
+            fail("Revert");
+        }
+
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+        assertEq(sub.amount, amount);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.paymentInterval, paymentInterval);
+        assertEq(sub.subscriber, subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(address0));
+        assertEq(sub.erc20TokensValid, false);
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// Nunca se llama a _processNativePayment a no ser que sea address(0)
+/////////////////////////////////////////////////////////////////////////
+    function check_test_initiatePayment(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken) public {
+
+        address subscriber = holders[0];
+
+        vm.assume (1 ether <= amount && amount <= 1000 ether);
+        vm.assume (1 days <= paymentInterval && paymentInterval <= 365 days);
+        vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
+        vm.assume (FalseToken != address(token));
+
+        uint256 validUntil = block.timestamp + _validUntil;
+        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        bool hasFailed = false;
+        try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
+            // Intencionadamente vacío, esperando que no haya revert
+        } catch {
+            hasFailed = true; // Se ha detectado un fallo
+        }
+        // Aserción para verificar si hubo un fallo
+        if (hasFailed) {
+            fail("La llamada a registerSubscription ha revertido de manera inesperada.");
+        }
+
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+        assertEq(sub.amount, amount);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.paymentInterval, paymentInterval);
+        assertEq(sub.subscriber, subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(FalseToken));
+        assertEq(sub.erc20TokensValid, FalseToken != address(0));
+
+        // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
+        uint256 warpToTime = block.timestamp + 1 days;
+        vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
+        vm.warp(warpToTime);
+// vm.warp(svm.createUint(64, "timestamp2"))
+
+        // Intentar iniciar un pago (no debería fallar)
+        vm.prank(subscriber);
+        bool success;
+        try initiator.initiatePayment(subscriber) {
+            success = true;
+        } catch {
+            success = false;
+        }
+        assert(success == true);
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// Nunca se llama a _processNativePayment a no ser que sea address(0)
+/////////////////////////////////////////////////////////////////////////
+
+    function check_test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
+        if(_amount == 0 || _paymentInterval == 0) return;
+
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 _validUntil = _validAfter + 10 days;
+        address subscriber = holders[0];
+
+        // Registering a subscription
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, _amount, _validUntil, _paymentInterval, address(token));
+
+        // Warp to a time before the subscription is valid
+        vm.warp(_validAfter - 10);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time after the subscription has expired
+        vm.warp(_validUntil + 10);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // If this line is reached, the test should fail
+            assert(false);
+        } catch {
+            // Expected behavior, the transaction should revert
+        }
+
+        // Warp to a time within the valid range and ensure it doesn't revert
+        vm.warp(_validAfter + 1);
+        vm.prank(subscriber);
+        try initiator.initiatePayment(subscriber) {
+            // Expected behavior, the transaction should succeed
+        } catch {
+            assert(false);
+        }
+    }
 
 /////////////////////////////////////////////////////////////////////////
 
