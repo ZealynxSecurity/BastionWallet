@@ -29,4 +29,6 @@ interface IHevm {
     function ffi(string[] calldata) external returns (bytes memory);
 
     function prank(address sender) external;
+
+    function deal(address usr, uint256 amt) external;
 }

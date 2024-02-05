@@ -62,8 +62,6 @@ contract EchidnaInitiator is EchidnaConfig {
         uint256 _validUntil
     ) public {
         if(_amount == 0 || _paymentInterval == 0) return;
-        // require(_validUntil > block.timestamp);
-
         
         // Simulate a different address trying to register the subscription
         hevm.prank(USER2);
@@ -166,5 +164,24 @@ contract EchidnaInitiator is EchidnaConfig {
         } catch {
             // Expected behavior, the transaction should revert
         }
+    }
+
+    function test_subscription_registration_max() public {
+        uint256 _amount = 1;
+        uint256 _validUntil = 5;
+        uint256 _paymentInterval = 1;
+
+        uint256 repeat = 500000;
+
+        for (uint256 index; index < repeat; index++) {
+            hevm.prank(_subscriber);
+            initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+        }
+
+        hevm.prank(_subscriber);
+        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+        
+        Debugger.log("Gas Left: ", gasleft());
+        assert(false);
     }
 }
