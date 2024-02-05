@@ -136,6 +136,33 @@ contract FoundryInitiatorTest is Test {
         }
     }
 
+    function testFuzzxcMultipleSubscriptions() public {
+        address subscriber = holders[0];
+        uint256 iterations = 5; 
+
+        for (uint256 i = 0; i < iterations; i++) {
+
+            uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
+            uint256 validUntil = block.timestamp + (1 days + i * 1 days);
+            uint256 paymentInterval = (1 days + i * 1 hours);
+
+            vm.prank(subscriber);
+            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+            console.log("subscriber:", subscriber);
+            console.log(" amount:", amount);
+            console.log("validUntil:", validUntil);
+        }
+
+        address[] memory registeredSubscribers = initiator.getSubscribers();
+        assertTrue(registeredSubscribers.length <= 1, "Should not allow multiple registrations for the same subscriber");
+
+        for (uint256 i = 1; i < registeredSubscribers.length; i++) {
+            console.log("registeredSubscribers[i - 1]:", registeredSubscribers[i - 1]);
+            console.log("registeredSubscribers[i]:", registeredSubscribers[i]);
+            assertTrue(registeredSubscribers[i - 1] != registeredSubscribers[i], "No duplicate subscribers should exist");
+        }
+    }
 /////////////////////////////////////////////////////////////////////////
 // registerSubscription NoToken ERC20
 /////////////////////////////////////////////////////////////////////////
@@ -182,6 +209,48 @@ contract FoundryInitiatorTest is Test {
             }
         }
         assertFalse(isSubscriberPresent, "Subscriber should be removed from the subscribers array");
+    }
+
+
+    function test_frRemoveSubscription() public {
+        address subscriber = holders[0];
+        uint256 amount = 1 ether;
+        uint256 validUntil = block.timestamp + 30 days;
+        uint256 paymentInterval = 10 days;
+
+        // Register the subscription
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+        console.log("subscriber:", subscriber);
+        console.log(" amount:", amount);
+        console.log("validUntil:", validUntil);
+        console.log("=================");
+
+        // Number of subscribers before removal
+        uint256 subscribersCountBefore = initiator.getSubscribers().length;
+        console.log("Subscribers count before removal:", subscribersCountBefore);
+
+        // Remove the subscription
+        vm.prank(subscriber);
+        initiator.removeSubscription(subscriber);
+        console.log("Subscriber removed:", subscriber);
+
+        // Verifications in the `mapping`
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+        console.log("Subscriber",sub.subscriber);
+        assertTrue(sub.subscriber == address(0), "The subscriber field should be reset");
+
+        // Verifications in the `subscribers` array
+        address[] memory registeredSubscribers = initiator.getSubscribers();
+        uint256 subscribersCountAfter = registeredSubscribers.length;
+        console.log("Subscribers count after removal:", subscribersCountAfter);
+
+        assertTrue(subscribersCountBefore - 1 == subscribersCountAfter, "The subscribers count should decrease by one");
+
+        for (uint i = 0; i < subscribersCountAfter; i++) {
+            assertTrue(registeredSubscribers[i] != subscriber, "The removed subscriber should not be in the list");
+            console.log("Subscriber at position", i, ":", registeredSubscribers[i]);
+        }
     }
 
 
