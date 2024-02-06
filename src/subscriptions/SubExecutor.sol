@@ -12,6 +12,8 @@ contract SubExecutor is ReentrancyGuard {
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
     event subscriptionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
+    event DebugSubExecutor(uint256 timestamp, uint256 amountChecked);
+
     // Function to get the wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
@@ -97,6 +99,9 @@ contract SubExecutor is ReentrancyGuard {
 
     function processPayment() external nonReentrant {
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
+        emit DebugSubExecutor(block.timestamp,  sub.validAfter);
+        emit DebugSubExecutor(block.timestamp,  sub.validUntil);
+
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
         require(msg.sender == sub.initiator, "Only the initiator can initiate payments");

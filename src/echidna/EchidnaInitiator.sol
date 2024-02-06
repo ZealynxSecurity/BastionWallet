@@ -3,22 +3,15 @@ pragma solidity ^0.8.0;
 
 import "../subscriptions/Initiator.sol";
 import "../MockERC20.sol";
-import "./EchidnaConfig.sol";
+import "./EchidnaSetup.sol";
 import "./Debugger.sol";
 
-contract EchidnaInitiator is EchidnaConfig {
+contract EchidnaInitiator is EchidnaSetup {
     Initiator public initiator;
-    MockERC20 public token;
-    address public _erc20Token;
-
     address public _subscriber = msg.sender;
 
     constructor() {
         initiator = new Initiator();
-        token = new MockERC20("Test Token", "TT");
-
-        _erc20Token = address(token);
-
     }
 
     // Tests various inputs for registering a subscription
@@ -110,7 +103,7 @@ contract EchidnaInitiator is EchidnaConfig {
         assert(sub.amount == 0);
     }
 
-        // Test that initiatePayment reverts if block.timestamp is outside the valid range
+    // Test that initiatePayment reverts if block.timestamp is outside the valid range
     function test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
         if(_amount == 0 || _paymentInterval == 0) return;
 
@@ -119,7 +112,13 @@ contract EchidnaInitiator is EchidnaConfig {
 
         // Registering a subscription
         hevm.prank(_subscriber);
-        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+        initiator.registerSubscription(
+            _subscriber, 
+            _amount, 
+            _validUntil, 
+            _paymentInterval, 
+            _erc20Token
+        );
 
         // Warp to a time before the subscription is valid
         hevm.warp(_validAfter - 10);
