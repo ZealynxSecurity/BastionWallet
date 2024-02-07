@@ -81,7 +81,7 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 
-        console.log("LA LLAMADA HA PASADO TODOS LOS REQUIRE" );
+        console.log("THE CALL HAS PASSED ALL REQUIREMENTS" );
 
 
         // uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
@@ -89,7 +89,7 @@ contract Initiator is Ownable, ReentrancyGuard {
         //     require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
         // }
         
-         subExecutor.processPayment();
+        subExecutor.processPayment();
     }
 
     function withdrawETH() public onlyOwner {
@@ -103,8 +103,8 @@ contract Initiator is Ownable, ReentrancyGuard {
 
     receive() external payable {}
 
-    function setSubExecutor(address _subExecutorAddress) external onlyOwner {
+    function setSubExecutor(address _subExecutorAddress) external  {
         subExecutor = ISubExecutor(_subExecutorAddress);
-        console.log("He pasado");
+        console.log("OK setSubExecutor");
     }
 }

@@ -100,7 +100,7 @@ contract SubExecutor is ReentrancyGuard {
     }
 
     function processPayment() external nonReentrant {
-        console.log("Dentro de processPayment" );
+        console.log("Within processPayment" );
 
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
         emit DebugSubExecutor(block.timestamp,  sub.validAfter);

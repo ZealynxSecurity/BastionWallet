@@ -405,14 +405,16 @@ function testFail_initiatePayment_ExpiredSubscription() public {
         // Registrar la suscripción
         vm.prank(subscriber);
         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
-
+        initiator.getSubscription(subscriber);
+        //in subExecutor
+        initiator.setSubExecutor(address(subExecutor));
+        subExecutor.getSubscription(subscriber);
         // Avanzar al momento en que la suscripción está activa pero no ha expirado
         uint256 warpToTime = _validAfter + 10;
         vm.warp(warpToTime);
 
         // Intentar iniciar un pago
         vm.prank(subscriber);
-        initiator.setSubExecutor(address(subExecutor));
         bool success;
         try initiator.initiatePayment(subscriber) {
             success = true;
@@ -561,46 +563,52 @@ function testFail_initiatePayment_ExpiredSubscription() public {
 // Nunca se llama a _processNativePayment a no ser que sea address(0)
 /////////////////////////////////////////////////////////////////////////
     function test_Fuzz_tinitiatePayment_ActiveSubscription(        
-            uint256 amount,
-            uint256 _validUntil,
-            uint256 paymentInterval,
-            address FalseToken) public {
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken) public {
 
 
-            address subscriber = holders[0];
-            uint256 _validAfter = block.timestamp + 1 days;
-            uint256 validUntil = _validAfter + 10 days;
+        address subscriber = holders[0];
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 validUntil = _validAfter + 10 days;
 
-            amount = bound(amount, 1 ether, 1000 ether);
-            paymentInterval = bound(paymentInterval, 1 days, 365 days);
+        amount = bound(amount, 1 ether, 1000 ether);
+        paymentInterval = bound(paymentInterval, 1 days, 365 days);
 
-            // Registrar la suscripción
-            vm.prank(subscriber);
-            initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+        // Registrar la suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
-            assertEq(sub.amount, amount);
-            assertEq(sub.validUntil, validUntil);
-            assertEq(sub.paymentInterval, paymentInterval);
-            assertEq(sub.subscriber, subscriber);
-            assertEq(sub.initiator, address(initiator));
-            assertEq(sub.erc20Token, address(FalseToken));
-            assertEq(sub.erc20TokensValid, FalseToken != address(0));
-            // Avanzar al momento en que la suscripción está activa pero no ha expirado
-            uint256 warpToTime = _validAfter + 10;
-            vm.warp(warpToTime);
+        assertEq(sub.amount, amount);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.paymentInterval, paymentInterval);
+        assertEq(sub.subscriber, subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(FalseToken));
+        assertEq(sub.erc20TokensValid, FalseToken != address(0));
+        // Avanzar al momento en que la suscripción está activa pero no ha expirado
 
-            // Intentar iniciar un pago
-            vm.prank(subscriber);
-            initiator.setSubExecutor(address(subExecutor));
-            bool success;
-            try initiator.initiatePayment(subscriber) {
-                success = true;
-            } catch {
-                success = false;
-            }
+        initiator.getSubscription(subscriber);
+        //in subExecutor
+        initiator.setSubExecutor(address(subExecutor));
+        subExecutor.getSubscription(subscriber);
 
-            assertTrue(success, "La llamada a initiatePayment haber sido exitosa");
+        uint256 warpToTime = _validAfter + 10;
+        vm.warp(warpToTime);
+
+        // Intentar iniciar un pago
+        vm.prank(subscriber);
+        bool success;
+        try initiator.initiatePayment(subscriber) {
+            success = true;
+        } catch {
+            success = false;
         }
+
+        assertTrue(success, "InitiatePayment call successful");
+    }
 
 /////////////////////////////////////////////////////////////////////////
 // Nunca se llama a _processNativePayment a no ser que sea address(0)
