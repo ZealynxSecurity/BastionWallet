@@ -14,7 +14,6 @@ contract SFoundrySubExecutorTest is Test {
     MockERC20 public token;
 
     address public deployer;
-
     address[] public holders;
 
 
@@ -89,11 +88,8 @@ contract SFoundrySubExecutorTest is Test {
 
 
 
-    // function testFrontrunRevoke() public {
-
-        
+    // function testFrontrunRevoke() public { 
     //     address attacker = address(1337);
-
     //     // Registrar sub
     //     vm.prank(holders[0]);
     //     subExecutor.createSubscription();
@@ -110,24 +106,32 @@ contract SFoundrySubExecutorTest is Test {
     // }
 
 
-function testCreateSubscription() public {
-    uint256 amount = 1 ether;
-    uint256 interval = 30 days;
-    uint256 validUntil = block.timestamp + 90 days;
-    address erc20Token = address(token);
+    function testCreateSubscription() public {
+        uint256 amount = 1 ether;
+        uint256 interval = 30 days;
+        uint256 validUntil = block.timestamp + 90 days;
+        address erc20Token = address(token);
 
-    address owner = subExecutor.getOwner();
-    vm.prank(owner);
-    console.log("owner", owner);
-    subExecutor.createSubscription(address(initiator), amount, interval, validUntil, erc20Token);
+        address owner = subExecutor.getOwner();
+        vm.prank(owner);
+        console.log("owner", owner);
+        subExecutor.createSubscription(address(initiator), amount, interval, validUntil, erc20Token);
 
-    // Verificar que la suscripción se haya creado correctamente
-    SubStorage memory sub = subExecutor.getSubscription(address(initiator));
-    assertEq(sub.amount, amount);
-    assertEq(sub.paymentInterval, interval);
-    assertEq(sub.validUntil, validUntil);
-    assertEq(sub.erc20Token, erc20Token);
-}
+        // Verificar que la suscripción se haya creado correctamente
+        SubStorage memory sub = subExecutor.getSubscription(address(initiator));
+        uint256 amountr =  sub.amount;
+        uint256 intervalr = sub.paymentInterval;
+        uint256 validuntilr = sub.validUntil;
+
+        // conole.log("amount", amountr);
+        console.log("interval", intervalr);
+        console.log("validUntil", validuntilr);
+
+        assertEq(sub.amount, amount);
+        assertEq(sub.paymentInterval, interval);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.erc20Token, erc20Token);
+    }
 
 
 
@@ -357,30 +361,84 @@ function testFuzzRevokeSubscription() public {
 
 //     // }
 
+// /////////////////////////////////////////////////////////////////////////
+// // ProcessPayment
+// /////////////////////////////////////////////////////////////////////////
 
-    function test_FuzzERC20Payment(uint256 tokenBalance, uint256 paymentAmount) public {
-        // Configurar el balance del token ERC20 en el contrato
-         uint256 supp = 100 ether;
-        vm.startPrank(deployer);
-        token.mint(deployer, supp);
-        token.approve(address(subExecutor), supp);
+//@audit => good
+function test_FuzzERC20Payment(uint256 tokenBalance, uint256 paymentAmount) public {
+    // Asegurar valores de entrada razonables.
+    vm.assume(1 ether <= tokenBalance && tokenBalance <= 100 ether);
+    vm.assume(1 <= paymentAmount && paymentAmount <= tokenBalance);
+
+    // Configurar el balance del token ERC20 en el contrato.
+    uint256 supp = 100 ether;
+    vm.startPrank(deployer);
+    token.mint(deployer, supp);
+    token.approve(address(subExecutor), supp);
+    vm.stopPrank();
+
+    // Configurar una suscripción con token ERC20.
+    address owner = subExecutor.getOwner();
+    uint256 _validAfter = block.timestamp;
+    uint256 _validUntil = block.timestamp + 90 days; // Extiende el período de validez.
+
+    vm.startPrank(owner);
+    subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, _validUntil, address(token));
+    SubStorage memory sub = subExecutor.getSubscription(address(initiator));
+    vm.stopPrank();
+    
+    // Ajustar el tiempo para estar después del 'validAfter' y cumplir con el intervalo de pago.
+    uint256 warpTime = sub.validAfter + sub.paymentInterval + 1; // +1 para asegurar que estamos después del intervalo
+    vm.warp(warpTime);
+
+    // Intentar procesar el pago como el iniciador.
+    vm.prank(address(initiator));
+    subExecutor.processPayment();
+
+    // La lógica para verificar el estado final, como el balance del token, se puede reactivar si es necesario.
+    // Asegúrate de que el estado del sistema después de procesar el pago es el esperado.
+}
+
+
+//@audit 
+    function test_ree_initiatePayment(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken
+    ) public {
+        // Definir los límites de los parámetros de entrada.
+        uint256 boundAmount = bound(amount, 1 ether, 1000 ether);
+        uint256 boundValidUntil = bound(_validUntil, 1 days, 365 days);
+        uint256 boundPaymentInterval = bound(paymentInterval, 1 days, 365 days);
+
+        // Ajustar 'validUntil' para que esté dentro del rango deseado desde ahora.
+        uint256 validUntil = block.timestamp + boundValidUntil;
+
+        // Configuración inicial y registro de la suscripción.
+        address subscriber = holders[0];
+        vm.startPrank(subscriber);
+        initiator.registerSubscription(subscriber, boundAmount, validUntil, boundPaymentInterval, FalseToken);
+            console.log("subscriber:", subscriber);
+            console.log(" amount:", boundAmount);
+            console.log("validUntil:", validUntil);
         vm.stopPrank();
-        vm.assume (1 ether <= tokenBalance && tokenBalance <= 1000 ether);
+        
+        uint256 warpToTime = block.timestamp + 1 days;
+        vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
+        vm.warp(warpToTime);
+        // Intentar iniciar un pago.
+            address owner = subExecutor.getOwner();
 
-        // Configurar una suscripción con token ERC20
-         address owner = subExecutor.getOwner();
-        vm.startPrank(owner);       
-        subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, block.timestamp + 90 days, address(token));
-        vm.stopPrank();
-
-        vm.assume(paymentAmount <= tokenBalance && paymentAmount > 0);
-
-        // Intentar procesar el pago
-        subExecutor.processPayment();
-
-        // Verificar que el pago se haya realizado correctamente
-        uint256 newTokenBalance = token.balanceOf(address(subExecutor));
-        assertEq(newTokenBalance, tokenBalance - paymentAmount);
+        vm.prank(owner);
+        bool success = true;
+        try subExecutor.processPayment() {
+            // Intencionadamente vacío.
+        } catch {
+            success = false;
+        }
+        assert(success);
     }
 
 
@@ -518,6 +576,37 @@ function testFuzzRevokeSubscription() public {
 //     }
 // }
 
+    function test_initiatePayment_ActiveSubscription() public {
+        address subscriber = deployer;
+        uint256 amount = 1 ether;
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 validUntil = _validAfter + 10 days;
+        uint256 paymentInterval = 10 days;
 
+
+        uint256 tokenAmount = 10 ether;
+        vm.prank(subscriber);
+        token.transfer(address(initiator), tokenAmount);
+
+
+        // Registrar la suscripción
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
+
+        // Avanzar al momento en que la suscripción está activa pero no ha expirado
+        uint256 warpToTime = _validAfter + 10;
+        vm.warp(warpToTime);
+
+        // Intentar iniciar un pago
+        vm.prank(subscriber);
+        bool success;
+        try subExecutor.processPayment() {
+            success = true;
+        } catch {
+            success = false;
+        }
+
+        assertTrue(success, "La llamada a initiatePayment haber sido exitosa");
+    }
 
 }

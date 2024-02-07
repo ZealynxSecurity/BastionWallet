@@ -6,6 +6,8 @@ import "lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
+import "forge-std/console.sol";
+
 contract SubExecutor is ReentrancyGuard {
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
@@ -96,7 +98,22 @@ contract SubExecutor is ReentrancyGuard {
     }
 
     function processPayment() external nonReentrant {
+        console.log("Dentro de processPayment" );
+
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
+        console.log("============" );
+        console.log("block.timestamp ",block.timestamp );
+        console.log(">= validAfter ",sub.validAfter );
+        console.log("============" );
+
+        console.log("block.timestamp ",block.timestamp );
+        console.log("<= validUntil ", sub.validUntil);
+        console.log("============" );
+
+        console.log("msg.sender ==",sub.initiator );
+        console.log("============" );
+        console.log("/////////////////////////////////////////" );
+
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
         require(msg.sender == sub.initiator, "Only the initiator can initiate payments");
@@ -107,7 +124,7 @@ contract SubExecutor is ReentrancyGuard {
             PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
             require(block.timestamp >= lastPayment.timestamp + sub.paymentInterval, "Payment interval not yet reached");
         } else {
-            require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Payment interval not yet reached");
+            require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Paco interval not yet reached");
         }
 
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));

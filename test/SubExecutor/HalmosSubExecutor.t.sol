@@ -374,7 +374,60 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         assertEq(newTokenBalance, tokenBalance - paymentAmount);
     }
 
+ function check_test_initiatePayment(
+        uint256 amount,
+        uint256 _validUntil,
+        uint256 paymentInterval,
+        address FalseToken) public {
 
+        address subscriber = holders[0];
+
+        vm.assume (1 ether <= amount && amount <= 1000 ether);
+        vm.assume (1 days <= paymentInterval && paymentInterval <= 365 days);
+        vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
+        vm.assume (FalseToken != address(token));
+
+        uint256 validUntil = block.timestamp + _validUntil;
+        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
+
+        // Registrar una suscripción
+        vm.prank(subscriber);
+        bool hasFailed = false;
+        try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
+            // Intencionadamente vacío, esperando que no haya revert
+        } catch {
+            hasFailed = true; // Se ha detectado un fallo
+        }
+        // Aserción para verificar si hubo un fallo
+        if (hasFailed) {
+            fail("La llamada a registerSubscription ha revertido de manera inesperada.");
+        }
+
+        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
+        assertEq(sub.amount, amount);
+        assertEq(sub.validUntil, validUntil);
+        assertEq(sub.paymentInterval, paymentInterval);
+        assertEq(sub.subscriber, subscriber);
+        assertEq(sub.initiator, address(initiator));
+        assertEq(sub.erc20Token, address(FalseToken));
+        assertEq(sub.erc20TokensValid, FalseToken != address(0));
+
+        // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
+        uint256 warpToTime = block.timestamp + 1 days;
+        vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
+        vm.warp(warpToTime);
+// vm.warp(svm.createUint(64, "timestamp2"))
+
+        // Intentar iniciar un pago (no debería fallar)
+        vm.prank(subscriber);
+        bool success;
+        try subExecutor.processPayment() {
+            success = true;
+        } catch {
+            success = false;
+        }
+        assert(success == true);
+    }
 
 // /////////////////////////////////////////////////////////////////////////
 // // Token ERC20 -  Diferentes Montos de Pago y Balances ERC20
