@@ -14,6 +14,8 @@ contract SubExecutor is ReentrancyGuard {
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
     event subscriptionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
+    event DebugSubExecutor(uint256 timestamp, uint256 amountChecked);
+
     // Function to get the wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
@@ -101,6 +103,9 @@ contract SubExecutor is ReentrancyGuard {
         console.log("Dentro de processPayment" );
 
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
+        emit DebugSubExecutor(block.timestamp,  sub.validAfter);
+        emit DebugSubExecutor(block.timestamp,  sub.validUntil);
+
         console.log("============" );
         console.log("block.timestamp ",block.timestamp );
         console.log(">= validAfter ",sub.validAfter );
