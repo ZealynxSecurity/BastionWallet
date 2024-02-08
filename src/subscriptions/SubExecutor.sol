@@ -122,7 +122,7 @@ contract SubExecutor is ReentrancyGuard {
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
         require(msg.sender == sub.initiator, "Only the initiator can initiate payments");
-
+        
         //Check when the last payment was done
         PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[msg.sender];
         if (paymentHistory.length > 0) {
@@ -132,8 +132,13 @@ contract SubExecutor is ReentrancyGuard {
             require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Paco interval not yet reached");
         }
 
+        // Antes de intentar añadir un nuevo PaymentRecord
+        console.log("Attempting to add a new PaymentRecord for", msg.sender);
+        console.log("Payment amount:", sub.amount);
+        console.log("Current timestamp:", block.timestamp);
+        console.log("Subscriber:", sub.subscriber);
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
-
+        console.log("PaymentRecord added for", msg.sender);
         //Check whether it's a native payment or ERC20 or ERC721
         if (sub.erc20TokensValid) {
             _processERC20Payment(sub);
@@ -156,10 +161,16 @@ contract SubExecutor is ReentrancyGuard {
     function _processERC20Payment(SubStorage storage sub) internal {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
+        console.log("ERC20 Token balance of SubExecutor:", balance);
         require(balance >= sub.amount, "Insufficient token balance");
-        token.transferFrom(address(this), sub.initiator, sub.amount);
-    }
 
+        uint256 allowance = token.allowance(address(this), sub.initiator);
+        console.log("Allowance for Initiator to spend SubExecutor's tokens:", allowance);
+        require(allowance >= sub.amount, "Insufficient allowance");
+
+        token.transferFrom(address(this), sub.initiator, sub.amount);
+        console.log("ERC20 payment processed from SubExecutor to Initiator");
+    }
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
         payable(sub.initiator).transfer(sub.amount);

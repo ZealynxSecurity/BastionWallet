@@ -371,11 +371,16 @@ function test_FuzzERC20Payment(uint256 tokenBalance, uint256 paymentAmount) publ
     vm.assume(1 ether <= tokenBalance && tokenBalance <= 100 ether);
     vm.assume(1 <= paymentAmount && paymentAmount <= tokenBalance);
 
-    // Configurar el balance del token ERC20 en el contrato.
+    // Configurar el balance del token ERC20 en el contrato `SubExecutor`.
     uint256 supp = 100 ether;
     vm.startPrank(deployer);
-    token.mint(deployer, supp);
-    token.approve(address(subExecutor), supp);
+    token.mint(address(subExecutor), supp);
+    vm.stopPrank();
+
+    // El `SubExecutor` debe aprobar al `Initiator` para gastar tokens en su nombre.
+    // Directamente establecer el allowance aquí, como parte del flujo de la prueba.
+    vm.startPrank(address(subExecutor)); // Asume que SubExecutor puede ser controlado para la prueba.
+    token.approve(address(initiator), supp);
     vm.stopPrank();
 
     // Configurar una suscripción con token ERC20.
@@ -399,7 +404,41 @@ function test_FuzzERC20Payment(uint256 tokenBalance, uint256 paymentAmount) publ
     // La lógica para verificar el estado final, como el balance del token, se puede reactivar si es necesario.
     // Asegúrate de que el estado del sistema después de procesar el pago es el esperado.
 }
+// /////////////////////////////////////////////////////////////////////////
+// // _processERC20Payment
+// /////////////////////////////////////////////////////////////////////////
 
+// function test_WWithdrawERC20() public {
+//     // Configuración: Enviar tokens ERC20 al contrato
+
+//     uint initialOwnerBalanceA = address(deployer).balance;
+//     uint InitiatorB = address(subExecutor).balance;
+//     console.log("initialOwnerBalanceA",initialOwnerBalanceA);
+//     console.log("InitiatorB",InitiatorB);
+
+//     uint256 tokenAmount = 10 ether;
+//     vm.prank(deployer);
+//     token.transfer(address(subExecutor), tokenAmount);
+
+//     // Balance de tokens del propietario y del contrato antes de la retirada
+//     uint256 ownerTokenBalanceBefore = token.balanceOf(deployer);
+//     uint256 contractTokenBalanceBefore = token.balanceOf(address(subExecutor));
+//     console.log("initialOwnerBalanceA",ownerTokenBalanceBefore);
+//     console.log("InitiatorB",contractTokenBalanceBefore);
+
+//     // Retirar tokens ERC20 como propietario
+//     vm.prank(deployer);
+//     subExecutor._processERC20Payment(address(token));
+
+//     // Verificaciones
+//     uint256 ownerTokenBalanceAfter = token.balanceOf(deployer);
+//     uint256 contractTokenBalanceAfter = token.balanceOf(address(subExecutor));
+//     console.log("initialOwnerBalanceA",ownerTokenBalanceAfter);
+//     console.log("InitiatorB",contractTokenBalanceAfter);
+
+//     assertEq(ownerTokenBalanceAfter, ownerTokenBalanceBefore + tokenAmount, "Owner token balance incorrect after withdrawal");
+//     assertEq(contractTokenBalanceAfter, contractTokenBalanceBefore - tokenAmount, "Contract token balance incorrect after withdrawal");
+// }
 
 //@audit 
     function test_ree_initiatePayment(
