@@ -5,13 +5,14 @@ import "forge-std/Test.sol";
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
 import "../../src/subscriptions/Initiator.sol";
 import "../../src/MockERC20.sol";
-
-// import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "../../src/subscriptions/SubExecutor.sol";
 
 
 
 contract HalmosInitiatorTest is SymTest, Test {
     Initiator initiator;
+    SubExecutor subExecutor;
+
     MockERC20 public token;
 
     address public deployer;
@@ -25,6 +26,7 @@ contract HalmosInitiatorTest is SymTest, Test {
         
         initiator = new Initiator();
         token = new MockERC20("Test Token", "TT");
+        subExecutor = new SubExecutor();
 
         uint256 supp = svm.createUint256("supp");
         token.mint(deployer, supp);
@@ -58,7 +60,9 @@ contract HalmosInitiatorTest is SymTest, Test {
 
 /////////////////////////////////////////////////////////////////////////
 
-
+/////////////////////////////////////////////////////////////////////////
+// registerSubscription 
+/////////////////////////////////////////////////////////////////////////
     function check_testRegisterSubscriptionFuzz(
         address _subscriber,
         uint256 _amount,
@@ -71,11 +75,9 @@ contract HalmosInitiatorTest is SymTest, Test {
 
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
 
-        // Add assertions here
         address[] memory registeredSubscribers = initiator.getSubscribers();
         assertEq(registeredSubscribers[0], _subscriber);
 
-      // Verificaciones
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
         assertEq(sub.amount, _amount);
         assertEq(sub.validUntil, _validUntil);
@@ -92,21 +94,18 @@ contract HalmosInitiatorTest is SymTest, Test {
 /////////////////////////////////////////////////////////////////////////
     function check_testFuzzMultipleSubscriptions() public {
         address subscriber = holders[0];
-        uint256 iterations = 2; // Número de veces que quieres registrar al suscriptor
+        uint256 iterations = 2; 
 
         for (uint256 i = 0; i < iterations; i++) {
-            // Generar valores aleatorios para cada registro
 
             uint256 amount = uint256(keccak256(abi.encodePacked(block.timestamp, subscriber, i))) % 100 ether;
             uint256 validUntil = block.timestamp + (1 days + i * 1 days);
             uint256 paymentInterval = (1 days + i * 1 hours);
 
-            // Asegurar que los valores son razonables
             vm.assume(amount > 0);
             vm.assume(validUntil > block.timestamp);
             vm.assume(paymentInterval > 0);
 
-            // Registrar la suscripción
             vm.prank(subscriber);
             initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
             address[] memory registeredSubscribers = initiator.getSubscribers();
@@ -116,7 +115,9 @@ contract HalmosInitiatorTest is SymTest, Test {
         }
     }
 
-
+/////////////////////////////////////////////////////////////////////////
+// removeSubscription
+/////////////////////////////////////////////////////////////////////////
     function check_testFUZZ_remove(
         address _subscriber,
         uint256 _amount,
@@ -127,14 +128,11 @@ contract HalmosInitiatorTest is SymTest, Test {
         vm.assume(_amount > 0 && _paymentInterval > 0);
         vm.startPrank(_subscriber);
 
-        // Registrar y luego eliminar la suscripción como el suscriptor
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
         initiator.removeSubscription(_subscriber);
 
-        // Verificaciones
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
         assertEq(sub.subscriber, address(0));
-
 
         address[] memory registeredSubscribers = initiator.getSubscribers();
         bool isSubscriberPresent = false;
@@ -167,16 +165,14 @@ contract HalmosInitiatorTest is SymTest, Test {
         uint256 validUntil = block.timestamp + _validUntil;
         vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
 
-        // Registrar una suscripción
         vm.prank(subscriber);
         bool hasFailed = false;
         try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
-            // Intencionadamente vacío, esperando que no haya revert
+
         } catch {
-            hasFailed = true; // Se ha detectado un fallo
+            hasFailed = true;
         }
 
-        // Aserción para verificar si hubo un fallo
         if (hasFailed) {
             fail("La llamada a registerSubscription ha revertido de manera inesperada.");
         }
@@ -250,15 +246,14 @@ contract HalmosInitiatorTest is SymTest, Test {
         uint256 validUntil = block.timestamp + _validUntil;
         vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
 
-        // Registrar una suscripción
         vm.prank(subscriber);
         bool hasFailed = false;
         try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
-            // Intencionadamente vacío, esperando que no haya revert
+
         } catch {
-            hasFailed = true; // Se ha detectado un fallo
+            hasFailed = true; 
         }
-        // Aserción para verificar si hubo un fallo
+
         if (hasFailed) {
             fail("La llamada a registerSubscription ha revertido de manera inesperada.");
         }
@@ -272,11 +267,11 @@ contract HalmosInitiatorTest is SymTest, Test {
         assertEq(sub.erc20Token, address(FalseToken));
         assertEq(sub.erc20TokensValid, FalseToken != address(0));
 
-        // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
         uint256 warpToTime = block.timestamp + 1 days;
         vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
         vm.warp(warpToTime);
 // vm.warp(svm.createUint(64, "timestamp2"))
+        initiator.setSubExecutor(address(subExecutor));
 
         // Intentar iniciar un pago (no debería fallar)
         vm.prank(subscriber);

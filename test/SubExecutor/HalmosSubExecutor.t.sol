@@ -73,6 +73,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 /////////////////////////////////////////////////////////////////////////
 // CreateSub
 /////////////////////////////////////////////////////////////////////////
+
     function ckeck_testFuzzCreateSub(
         uint256 amount,
         uint256 validUntil,
@@ -95,13 +96,15 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         vm.stopPrank();
     }
 
+/////////////////////////////////////////////////////////////////////////
+// CreateSub
+/////////////////////////////////////////////////////////////////////////
+
     function check_testFuzzCreateSubscription(uint256 amount, uint256 interval, uint256 validUntilOffset, address erc20Token) public {
-        // Asegurarse de que las entradas sean manejables para la prueba
 
         uint256 amount = svm.createUint256("amount");
         uint256 interval = svm.createUint256("interval");
         uint256 validUntilOffset = svm.createUint256("validUntilOffset");
-
 
         vm.assume (1 ether <= amount && amount <= 1000 ether);
         vm.assume (1 days <= interval && interval <= 365 days);
@@ -115,15 +118,13 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         subExecutor.createSubscription(address(initiator), amount, interval, validUntil, erc20Token);
         vm.stopPrank();
 
-
-        // Verificar que la suscripción se haya creado correctamente
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
         assertTrue(sub.amount == amount && sub.paymentInterval == interval && sub.validUntil == validUntil);
     }
 
 
 // /////////////////////////////////////////////////////////////////////////
-// // Valor muy lejana en block.timestamp: _validUntil ¿Vale cualquier fecha?
+// // Very far value in block.timestamp: _validUntil Is any date valid?
 // /////////////////////////////////////////////////////////////////////////
     function check_testFuzzSubscriptionExtremeDates(uint256 validUntilOffset) public {
         uint256 amount = 1 ether;
@@ -137,13 +138,13 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         vm.startPrank(owner);
         subExecutor.createSubscription(address(initiator), amount, interval, validUntil, address(token));
 
-        // Verificar que la suscripción se haya creado correctamente con fechas extremas
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
         assertEq(sub.validUntil, validUntil);
     }
 
+
 // /////////////////////////////////////////////////////////////////////////
-// // Valor Negativo block.timestamp -1 en parametro validUntil
+// // Negative value block.timestamp -1 in parameter validUntil
 // /////////////////////////////////////////////////////////////////////////
 
     event argumento(uint256 indexed valid);
@@ -160,10 +161,9 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         vm.startPrank(owner);
         subExecutor.createSubscription(address(initiator), amount, interval, validUntil, address(token));
 
-        // Verificar que la suscripción se haya creado correctamente con fechas extremas
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
         uint256 valid = sub.validUntil;
-        console2.log("ARGUMENTO", valid);
+        console2.log("ARGUMENT", valid);
         emit argumento(valid);
         assertEq(sub.validUntil, validUntil);
     }
@@ -171,7 +171,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 
 
 // /////////////////////////////////////////////////////////////////////////
-// // ModifiSub param: _interval Alguna restriccion¿
+// // ModifiSub param: _interval Any restrictions ?
 // /////////////////////////////////////////////////////////////////////////
 
     function check_testFuzzModifyInterval(uint256 amount, uint256 interval, uint256 newinterval, uint256 validUntilOffset) public {
@@ -207,7 +207,6 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         }
         vm.stopPrank();
 
-
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
 
         assertEq(sub.amount, amount);
@@ -217,10 +216,10 @@ contract SHalmosSubExecutorTest is SymTest, Test {
     }
 
 // /////////////////////////////////////////////////////////////////////////
-// // ModifiSub param: todos
+// // ModifiSub param: Modifying all parameters
 // /////////////////////////////////////////////////////////////////////////
+
     function check_testFuzzModifySubscription(uint256 amount, uint256 interval, uint256 validUntilOffset) public {
-        // Configuración inicial
         uint256 initialAmount = 10 ether;
         uint256 initialInterval = 30 days;
         uint256 initialValidUntil = block.timestamp + 60 days;
@@ -229,11 +228,9 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         vm.startPrank(owner);
         subExecutor.createSubscription(address(initiator), initialAmount, initialInterval, initialValidUntil, address(token));
 
-        // Fuzzing
-         uint256 amount = svm.createUint256("amount");
+        uint256 amount = svm.createUint256("amount");
         uint256 newinterval = svm.createUint256("newinterval");
         uint256 validUntilOffset = svm.createUint256("validUntilOffset");
-
 
         vm.assume (1 ether <= amount && amount <= 1000 ether);
         vm.assume (1 days <= newinterval && newinterval <= 365 days);
@@ -243,10 +240,10 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 
         subExecutor.modifySubscription(address(initiator), amount, interval, validUntil, address(token));
         vm.stopPrank();
-        // Verificación
+
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
         assertTrue(sub.amount == amount && sub.paymentInterval == interval && sub.validUntil == validUntil);
-}
+    }
 
 
 // /////////////////////////////////////////////////////////////////////////
@@ -259,7 +256,6 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         uint256 interval = svm.createUint256("interval");
         uint256 validUntilOffset = svm.createUint256("validUntilOffset");
 
-
         vm.assume (1 ether <= amount && amount <= 1000 ether);
         vm.assume (1 days <= interval && interval <= 365 days);
         vm.assume (1 days <= validUntilOffset && validUntilOffset <= 365 days);
@@ -272,25 +268,22 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 
         subExecutor.createSubscription(address(initiator), amount, interval, validUntil, address(token));
 
-        // Revocar la suscripción
         subExecutor.revokeSubscription(address(initiator));
         vm.stopPrank();
 
-        // Verificar que la suscripción haya sido revocada
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
-        assert(sub.initiator == address(0)); // O alguna otra verificación de que la suscripción fue revocada
+        assert(sub.initiator == address(0));
     }
 
 // /////////////////////////////////////////////////////////////////////////
-// // RevokeSubscription en el tiempo /   vm.assume(revokeTime < block.timestamp)
+// // RevokeSubscription in time / vm.assume(revokeTime < block.timestamp)
 // /////////////////////////////////////////////////////////////////////////
     function check_testFuzzRevokeSubscriptionWithTime(uint256 amount, uint256 interval, uint256 validUntilOffset, uint256 revokeTimeOffset) public {
-        // Configuración inicial
+
         uint256 amount = svm.createUint256("amount");
         uint256 interval = svm.createUint256("interval");
         uint256 validUntilOffset = svm.createUint256("validUntilOffset");
         uint256 revokeTimeOffset = svm.createUint256("revokeTimeOffset");
-
 
         vm.assume (1 ether <= amount && amount <= 1000 ether);
         vm.assume (1 days <= interval && interval <= 365 days);
@@ -301,18 +294,15 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         uint256 revokeTime = block.timestamp - revokeTimeOffset;
         vm.assume(revokeTime < block.timestamp);
 
-
         vm.assume(amount > 0 && interval > 0 && validUntil > block.timestamp);
         address owner = subExecutor.getOwner();
         vm.startPrank(owner);
 
         subExecutor.createSubscription(address(initiator), amount, interval, validUntil, address(token));
 
-        // Avanzar el tiempo y revocar la suscripción
         vm.warp(revokeTime);
         subExecutor.revokeSubscription(address(initiator));
 
-        // Verificar que la suscripción se haya revocado correctamente
         SubStorage memory sub = subExecutor.getSubscription(address(initiator));
         assertEq(sub.initiator, address(0));
     }
@@ -322,54 +312,23 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 // // Balance
 // /////////////////////////////////////////////////////////////////////////
 
-    // function testFuzzBalances(
-    //     uint256 amount,
-    //     address token  
-    //     ) public {
-
-    //     vm.assume(amount < MAX_UINT);  
-
-    //     if (token == address(0)) {
-    //         vm.deal(address(subExecutor), amount);
-    //     } else {
-    //         vm.assume(ERC20(token).totalSupply() >= amount); 
-    //     vm.prank(token);
-    //         ERC20(token).transfer(address(subExecutor), amount);    
-    //     }
-
-    //     try subExecutor.processPayment(msg.sender) {
-    //         assertTrue(true);
-    //     } catch Error(string memory reason) {
-    //         if (token == address(0)) {
-    //         assertEq(reason, "Insufficient Ether balance"); 
-    //         } else {
-    //         assertEq(reason, "Insufficient token balance");   
-    //         }
-    //         emit log("Balance check failed");    
-    //     }  
-
-    // }
-
     function check_test_FuzzERC20Payment(uint256 tokenBalance, uint256 paymentAmount) public {
-        // Configurar el balance del token ERC20 en el contrato
-         uint256 supp = 100 ether;
+
+        uint256 supp = 100 ether;
         vm.startPrank(deployer);
         token.mint(deployer, supp);
         token.approve(address(subExecutor), supp);
         vm.stopPrank();
 
-        // Configurar una suscripción con token ERC20
-         address owner = subExecutor.getOwner();
+        address owner = subExecutor.getOwner();
         vm.startPrank(owner);       
         subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, block.timestamp + 90 days, address(token));
         vm.stopPrank();
 
         vm.assume(paymentAmount <= tokenBalance && paymentAmount > 0);
 
-        // Intentar procesar el pago
         subExecutor.processPayment();
 
-        // Verificar que el pago se haya realizado correctamente
         uint256 newTokenBalance = token.balanceOf(address(subExecutor));
         assertEq(newTokenBalance, tokenBalance - paymentAmount);
     }
