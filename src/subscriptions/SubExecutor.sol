@@ -100,24 +100,24 @@ contract SubExecutor is ReentrancyGuard {
     }
 
     function processPayment() external nonReentrant {
-        console.log("Within processPayment" );
+        // console.log("Within processPayment" );
 
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
-        emit DebugSubExecutor(block.timestamp,  sub.validAfter);
-        emit DebugSubExecutor(block.timestamp,  sub.validUntil);
+        // emit DebugSubExecutor(block.timestamp,  sub.validAfter);
+        // emit DebugSubExecutor(block.timestamp,  sub.validUntil);
 
-        console.log("============" );
-        console.log("block.timestamp ",block.timestamp );
-        console.log(">= validAfter ",sub.validAfter );
-        console.log("============" );
+        // console.log("============" );
+        // console.log("block.timestamp ",block.timestamp );
+        // console.log(">= validAfter ",sub.validAfter );
+        // console.log("============" );
 
-        console.log("block.timestamp ",block.timestamp );
-        console.log("<= validUntil ", sub.validUntil);
-        console.log("============" );
+        // console.log("block.timestamp ",block.timestamp );
+        // console.log("<= validUntil ", sub.validUntil);
+        // console.log("============" );
 
-        console.log("msg.sender ==",sub.initiator );
-        console.log("============" );
-        console.log("/////////////////////////////////////////" );
+        // console.log("msg.sender ==",sub.initiator );
+        // console.log("============" );
+        // console.log("/////////////////////////////////////////" );
 
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
@@ -133,12 +133,13 @@ contract SubExecutor is ReentrancyGuard {
         }
 
         // Antes de intentar añadir un nuevo PaymentRecord
-        console.log("Attempting to add a new PaymentRecord for", msg.sender);
-        console.log("Payment amount:", sub.amount);
-        console.log("Current timestamp:", block.timestamp);
-        console.log("Subscriber:", sub.subscriber);
+        // console.log("Attempting to add a new PaymentRecord for", msg.sender);
+        // console.log("Payment amount:", sub.amount);
+        // console.log("Current timestamp:", block.timestamp);
+        // console.log("Subscriber:", sub.subscriber);
+
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
-        console.log("PaymentRecord added for", msg.sender);
+        // console.log("PaymentRecord added for", msg.sender);
         //Check whether it's a native payment or ERC20 or ERC721
         if (sub.erc20TokensValid) {
             _processERC20Payment(sub);
@@ -168,7 +169,7 @@ contract SubExecutor is ReentrancyGuard {
         console.log("Allowance for Initiator to spend SubExecutor's tokens:", allowance);
         require(allowance >= sub.amount, "Insufficient allowance");
 
-        token.transferFrom(address(this), sub.initiator, sub.amount);
+        token.transfer(sub.initiator, sub.amount);
         console.log("ERC20 payment processed from SubExecutor to Initiator");
     }
     function _processNativePayment(SubStorage storage sub) internal {

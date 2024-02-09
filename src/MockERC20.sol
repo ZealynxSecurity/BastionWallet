@@ -9,19 +9,19 @@ contract MockERC20 is AccessControl, ERC20 {
     uint8 private __decimals = 18;
 
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MINTER_ROLE, msg.sender);
+        // _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        // _setupRole(MINTER_ROLE, msg.sender);
     }
 
     function decimals() public view override returns (uint8) {
         return __decimals;
     }
 
-    function setDecimals(uint8 _decimals) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setDecimals(uint8 _decimals) external {
         __decimals = _decimals;
     }
 
-    function mint(address _to, uint256 _value) external onlyRole(MINTER_ROLE) {
+    function mint(address _to, uint256 _value) external {
         _mint(_to, _value);
     }
 }
