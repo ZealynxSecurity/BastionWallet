@@ -11,10 +11,12 @@ contract EchidnaSubExecutor is EchidnaSetup {
     SubExecutor public subExecutor;
     address immutable public entryPoint;
     address[] public allSubscribers;
+    address private deployer;
 
     constructor() {
         subExecutor = new SubExecutor();
         initiator = new Initiator();
+        deployer = msg.sender;
 
         entryPoint = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
 
@@ -142,10 +144,8 @@ contract EchidnaSubExecutor is EchidnaSetup {
     }
 
     // Echidna test to try to break the validity period in SubExecutor's processPayment function
-    function test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
+    function test_payment_validity_before_subscription(uint256 _amount, uint256 _paymentInterval) public {
         if (_amount == 0 || _paymentInterval == 0) return;
-
-        Debugger.log("timestamp numero! ", block.timestamp);
 
         uint256 _validAfter = block.timestamp + 1 days;
         uint256 _validUntil = _validAfter + 10 days;
@@ -167,31 +167,84 @@ contract EchidnaSubExecutor is EchidnaSetup {
         hevm.warp(_validAfter - 10);
         Debugger.log("timestamp with _validAfter - 10! ", block.timestamp);
 
-        hevm.prank(subExecutor.getOwner());
+        hevm.prank(address(initiator));
         try subExecutor.processPayment() {
             // If this line is reached, the test should fail
             assert(false);
         } catch {
             // Expected behavior, the transaction should revert
+            assert(true);
         }
+    }
+
+    // Echidna test to try to break the validity period in SubExecutor's processPayment function
+    function test_payment_validity_expired_subscription(uint256 _amount, uint256 _paymentInterval) public {
+        if (_amount == 0 || _paymentInterval == 0) return;
+
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 _validUntil = _validAfter + 10 days;
+
+        Debugger.log("_validAfter numero! ", _validAfter);
+        Debugger.log("_validUntil numero! ", _validUntil);
+
+        // Registering a subscription
+        hevm.prank(address(entryPoint));
+        subExecutor.createSubscription(
+            address(initiator), 
+            _amount, 
+            _paymentInterval, 
+            _validUntil, 
+            _erc20Token
+        );
 
         // Warp to a time after the subscription has expired
         hevm.warp(_validUntil + 10);
         Debugger.log("timestamp with _validUntil + 10! ", block.timestamp);
 
-        hevm.prank(subExecutor.getOwner());
+        hevm.prank(address(initiator));
         try subExecutor.processPayment() {
             // If this line is reached, the test should fail
             assert(false);
         } catch {
             // Expected behavior, the transaction should revert
+            assert(true);
         }
+    }
+
+    // Echidna test to try to break the validity period in SubExecutor's processPayment function
+    function test_payment_validity_valid_subscription() public {
+        uint256 _amount = 25;
+        uint256 _paymentInterval = 2000;
+        if (_amount == 0 || _paymentInterval == 0) return;
+
+        // hevm.prank(deployer);
+        // token.mint(address(subExecutor), 100 ether);
+
+        // hevm.prank(address(subExecutor));
+        // token.approve(address(initiator), 100 ether);
+
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 _validUntil = _validAfter + 10 days;
+
+        Debugger.log("_validAfter number! ", _validAfter);
+        Debugger.log("_validUntil number! ", _validUntil);
+
+        // Registering a subscription
+        hevm.prank(address(entryPoint));
+        subExecutor.createSubscription(
+            address(initiator), 
+            _amount, 
+            _paymentInterval, 
+            _validUntil, 
+            _erc20Token
+        );
 
         // Warp to a time within the valid range and ensure it doesn't revert
         hevm.warp(_validAfter + 1);
-        hevm.prank(subExecutor.getOwner());
+        hevm.prank(address(initiator));
         try subExecutor.processPayment() {
             // Expected behavior, the transaction should succeed
+            assert(true);
         } catch {
             assert(false);
         }
