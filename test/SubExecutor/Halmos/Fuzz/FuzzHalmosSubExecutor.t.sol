@@ -1,73 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "forge-std/Test.sol";
-import "../../src/subscriptions/SubExecutor.sol";
-import "../../src/subscriptions/Initiator.sol";
-import "../../src/MockERC20.sol";
-import {SymTest} from "halmos-cheatcodes/SymTest.sol";
+import "../SetUpHS.sol";
 
-// import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-
-contract SHalmosSubExecutorTest is SymTest, Test {
-    Initiator initiator;
-    SubExecutor subExecutor;
-    MockERC20 public token;
-
-    address public deployer;
-
-    address[] public holders;
-
-
-    function setUp() public {
-
-        deployer = svm.createAddress("deployer");
-        vm.startPrank(deployer);
-        
-        initiator = new Initiator();
-        subExecutor = new SubExecutor();
-        token = new MockERC20("Test Token", "TT");
-
-        uint256 supp = 100 ether;
-        token.mint(deployer, supp);
-        token.approve(address(token), supp);
-
-        vm.stopPrank();
-
-        holders = new address[](3);
-        holders[0] = address(0x1001);
-        holders[1] = address(0x1002);
-        holders[2] = address(0x1003);
-
-        for (uint i = 0; i < holders.length; i++) {
-            address account = holders[i];
-            uint256 balance = 10 ether;
-            vm.prank(deployer);
-            token.transfer(account, balance);
-            for (uint j = 0; j < i; j++) {
-                address other = holders[j];
-                uint256 amount = 5 ether;
-                vm.prank(account);
-                token.approve(other, amount);
-            }
-        }
-    }
-
-
-/////////////////////////////////////////////////////////////////////////
-
-// UNIT TEST
-
-/////////////////////////////////////////////////////////////////////////
-
-
-
-
-/////////////////////////////////////////////////////////////////////////
-
-// FUZZ TEST
-
-/////////////////////////////////////////////////////////////////////////
+contract HalmosSubExecutor_Fuzz_Test is SetUp_HalmosSubExecutor {
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -100,7 +36,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 // CreateSub
 /////////////////////////////////////////////////////////////////////////
 
-    function check_testFuzzCreateSubscription(uint256 amount, uint256 interval, uint256 validUntilOffset, address erc20Token) public {
+    function check_testFuzzCreateSubscription(uint256 interval, uint256 validUntilOffset, address erc20Token) public {
 
         uint256 amount = svm.createUint256("amount");
         uint256 interval = svm.createUint256("interval");
@@ -126,6 +62,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 // /////////////////////////////////////////////////////////////////////////
 // // Very far value in block.timestamp: _validUntil Is any date valid?
 // /////////////////////////////////////////////////////////////////////////
+
     function check_testFuzzSubscriptionExtremeDates(uint256 validUntilOffset) public {
         uint256 amount = 1 ether;
         uint256 interval = 30 days;
@@ -278,6 +215,7 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 // /////////////////////////////////////////////////////////////////////////
 // // RevokeSubscription in time / vm.assume(revokeTime < block.timestamp)
 // /////////////////////////////////////////////////////////////////////////
+
     function check_testFuzzRevokeSubscriptionWithTime(uint256 amount, uint256 interval, uint256 validUntilOffset, uint256 revokeTimeOffset) public {
 
         uint256 amount = svm.createUint256("amount");
@@ -333,206 +271,97 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         assertEq(newTokenBalance, tokenBalance - paymentAmount);
     }
 
- function check_test_initiatePayment(
-        uint256 amount,
-        uint256 _validUntil,
-        uint256 paymentInterval,
-        address FalseToken,
-        uint256 tokenBalance) public {
-
-        address subscriber = holders[0];
-
-        vm.assume (1 ether <= amount && amount <= 1000 ether);
-        vm.assume (1 days <= paymentInterval && paymentInterval <= 365 days);
-        vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
-        vm.assume (FalseToken != address(token));
-
-        vm.assume(tokenBalance >= 1 ether && tokenBalance <= 1000 ether);
-
-        uint256 validAfter = block.timestamp;
-        uint256 validUntil = block.timestamp + _validUntil;
-        vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
-
-        // Mint tokens to SubExecutor and set the allowance for Initiator.
-        vm.startPrank(subscriber);
-        token.mint(address(subExecutor), tokenBalance);
-        vm.stopPrank();
-
-        // SubExecutor approves Initiator to spend tokens on its behalf.
-        vm.startPrank(address(subExecutor));
-        token.approve(address(initiator), tokenBalance);
-        vm.stopPrank();
-
-        vm.prank(subscriber);
-        bool hasFailed = false;
-        try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
-
-        } catch {
-            hasFailed = true; 
-        }
-
-        if (hasFailed) {
-            fail("La llamada a registerSubscription ha revertido de manera inesperada.");
-        }
-
-        ISubExecutor.SubStorage memory sub = initiator.getSubscription(subscriber);
-        assertEq(sub.amount, amount);
-        assertEq(sub.validUntil, validUntil);
-        assertEq(sub.paymentInterval, paymentInterval);
-        assertEq(sub.subscriber, subscriber);
-        assertEq(sub.initiator, address(initiator));
-        assertEq(sub.erc20Token, address(FalseToken));
-        assertEq(sub.erc20TokensValid, FalseToken != address(0));
-
-        // Asegurarse de que estamos en un momento en el que la suscripción está activa y no ha expirado
-        uint256 warpToTime = block.timestamp + 1 days;
-        vm.assume(warpToTime > block.timestamp && warpToTime < validUntil);
-        vm.warp(warpToTime);
-// vm.warp(svm.createUint(64, "timestamp2"))
-
-        // Intentar iniciar un pago (no debería fallar)
-        bool success;
-        vm.prank(address(initiator));
-        try subExecutor.processPayment() {
-            success = true;
-        } catch {
-            success = false;
-        }
-        assert(success == true);
-    }
-
 // /////////////////////////////////////////////////////////////////////////
-// // Token ERC20 -  Diferentes Montos de Pago y Balances ERC20
+// // 6. _processERC20Payment Logic Flaw: Incorrect Token Transfer
 // /////////////////////////////////////////////////////////////////////////
 
-//     // function testFuzzERC20Tokens(address token) public {
+function check_test_initiatePayment(uint256 tokenBalance, uint256 paymentAmount) public {
+    vm.assume(tokenBalance >= 1 ether && tokenBalance <= 1000 ether);
+    vm.assume(paymentAmount >= 1 wei && paymentAmount <= tokenBalance);
 
-//     //     if (token == address(0)) {
-//     //         vm.deal(address(this), 1 ether);
-//     //     } else {
-//     //         vm.startPrank(token);
-//     //         ERC20 alienToken = ERC20(token); 
-//     //         alienToken.mint(address(this), 10000);
-//     //         vm.stopPrank();
-//     //     }
+    vm.startPrank(deployer);
+    token.mint(address(subExecutor), tokenBalance);
+    vm.stopPrank();
 
-//     //     try subExecutor.createSubscription(
-//     //         initiator, 
-//     //         10,
-//     //         block.timestamp + 365 days,
-//     //         30 days, 
-//     //         token
-//     //     ) {  
-//     //         assertTrue(true);
-//     //     } catch (error) {
-//     //         if (token == address(0)) {
-//     //         assertFalse(true); // No debería fallar con ETH
-//     //         } else {
-//     //         assertEq(error, "Invalid token"); // Token no válido
-//     //         }
-//     //     }
+    vm.startPrank(address(subExecutor));
+    token.approve(address(initiator), tokenBalance);
+    vm.stopPrank();
 
-//     // }
+    uint256 subExecutorBalanceBefore = token.balanceOf(address(subExecutor));
+    uint256 initiatorBalanceBefore = token.balanceOf(address(initiator));
 
-// function testFuzzERC20PaymentWithVariableAmounts(uint256 tokenBalance, uint256 paymentAmount) public {
-//     // Configurar un balance de token ERC20
-//     uint256 mintAmount = bound(tokenBalance, 1 ether, 1000 ether);
-//     mockERC20.mint(address(subExecutor), mintAmount);
+    address owner = subExecutor.getOwner();
+    uint256 validAfter = block.timestamp;
+    uint256 validUntil = block.timestamp + 90 days;
 
-//     // Configurar una suscripción
-//     uint256 subscriptionAmount = bound(paymentAmount, 1 ether, mintAmount);
-//     subExecutor.createSubscription(address(initiator), subscriptionAmount, 30 days, block.timestamp + 90 days, address(mockERC20));
+    vm.startPrank(owner);
+    subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, validUntil, address(token));
+    vm.stopPrank();
 
-//     vm.assume(subscriptionAmount <= mintAmount);
+    vm.warp(validAfter + 30 days + 1);
 
-//     // Procesar el pago y verificar el resultado
-//     subExecutor.processPayment();
-//     uint256 newTokenBalance = mockERC20.balanceOf(address(subExecutor));
-//     assertEq(newTokenBalance, mintAmount - subscriptionAmount);
-// }
+    // Procesa el pago como el Initiator.
+    vm.prank(address(initiator));
+    subExecutor.processPayment();
 
-// /////////////////////////////////////////////////////////////////////////
-// // Payment
-// /////////////////////////////////////////////////////////////////////////
+    // Verifica los balances después del pago.
+    uint256 subExecutorBalanceAfter = token.balanceOf(address(subExecutor));
+    uint256 initiatorBalanceAfter = token.balanceOf(address(initiator));
 
-//     function testFuzzPayment(uint256 balance, uint256 paymentAmount) public {
-//         // Configurar un balance en el contrato
-//         vm.deal(address(subExecutor), balance);
-
-//         // Configuración inicial de la suscripción
-//         subExecutor.createSubscription(address(initiator), paymentAmount, 30 days, block.timestamp + 90 days, address(0));
-
-//         // Asegurarse de que los montos sean manejables
-//         vm.assume(paymentAmount <= balance && paymentAmount > 0);
-
-//         // Intentar procesar el pago
-//         subExecutor.processPayment();
-        
-//         // Verificar resultados
-//         uint256 newBalance = address(subExecutor).balance;
-//         assertEq(newBalance, balance - paymentAmount);
-//     }
-
-//     function testFuzzPaymentInterval(uint256 initialTimestampOffset, uint256 paymentInterval, uint256 warpTime) public {
-//         uint256 amount = 1 ether;
-//         uint256 validUntil = block.timestamp + 365 days;
-//         address erc20Token = address(mockERC20);
-
-//         // Asegurarse de que los intervalos y tiempos sean razonables
-//         paymentInterval = bound(paymentInterval, 1 hours, 365 days);
-//         warpTime = bound(warpTime, 1 hours, 2 * 365 days);
-//         vm.assume(paymentInterval < warpTime);
-
-//         // Crear una suscripción y avanzar el tiempo
-//         subExecutor.createSubscription(address(initiator), amount, paymentInterval, validUntil, erc20Token);
-//         vm.warp(block.timestamp + initialTimestampOffset + warpTime);
-
-//         // Intentar procesar el pago
-//         bool shouldRevert = block.timestamp < validUntil && (block.timestamp + warpTime) < (initialTimestampOffset + paymentInterval);
-//         if (shouldRevert) {
-//             vm.expectRevert("Payment interval not yet reached");
-//         }
-//         subExecutor.processPayment();
-
-//         // Verificaciones adicionales si es necesario
-//     }
+    // Aserciones para verificar la transferencia correcta de tokens.
+    assertEq(subExecutorBalanceAfter, subExecutorBalanceBefore - paymentAmount, "SubExecutor's balance should decrease by the payment amount.");
+    assertEq(initiatorBalanceAfter, initiatorBalanceBefore + paymentAmount, "Initiator's balance should increase by the payment amount.");
+}
 
 
 // /////////////////////////////////////////////////////////////////////////
-// // Subscription Dates
+// // 6.2 _processERC20Payment Logic Flaw: Incorrect Token Transfer (uint256 paymentIntervalDays)
 // /////////////////////////////////////////////////////////////////////////
 
-// function testFuzzSubscriptionDates(uint256 validUntilOffset, uint256 paymentInterval) public {
-//     uint256 validUntil = block.timestamp + bound(validUntilOffset, 1 days, 3650 days);
-//     paymentInterval = bound(paymentInterval, 1 days, 365 days);
+function ckeck_Fuzz_processPayment(uint256 tokenBalance, uint256 paymentAmount, uint256 paymentIntervalDays) public {
+    // Asegura valores de entrada razonables para el balance de tokens, cantidad de pago, e intervalo de pago.
+    vm.assume(tokenBalance >= 1 ether && tokenBalance <= 1000 ether);
+    vm.assume(paymentAmount >= 1 wei && paymentAmount <= tokenBalance);
+    vm.assume(paymentIntervalDays >= 1 && paymentIntervalDays <= 365); // Intervalo de pago de 1 día a 365 días.
 
-//     vm.assume(validUntil > block.timestamp && paymentInterval > 0);
+    // Mint tokens al SubExecutor y establece el allowance para el Initiator.
+    vm.startPrank(deployer);
+    token.mint(address(subExecutor), tokenBalance);
+    vm.stopPrank();
 
-//     subExecutor.createSubscription(address(initiator), 1 ether, paymentInterval, validUntil, address(mockERC20));
+    // SubExecutor aprueba al Initiator para gastar tokens en su nombre.
+    vm.startPrank(address(subExecutor));
+    token.approve(address(initiator), tokenBalance);
+    vm.stopPrank();
 
-//     // Verificar que las fechas se hayan establecido correctamente
-//     SubStorage memory sub = subExecutor.getSubscription(address(initiator));
-//     assertEq(sub.validUntil, validUntil);
-//     assertEq(sub.paymentInterval, paymentInterval);
-// }
+    // Guarda los balances iniciales del SubExecutor e Initiator para comparar más tarde.
+    uint256 subExecutorBalanceBefore = token.balanceOf(address(subExecutor));
+    uint256 initiatorBalanceBefore = token.balanceOf(address(initiator));
 
-// /////////////////////////////////////////////////////////////////////////
-// // Access Control
-// /////////////////////////////////////////////////////////////////////////
+    // Configura una suscripción en SubExecutor para el Initiator.
+    address owner = subExecutor.getOwner();
+    uint256 validAfter = block.timestamp;
+    uint256 validUntil = block.timestamp + 90 days; // Este valor también podría ser dinámico si lo deseas.
 
-// function testFuzzAccessControlDifferentRoles(address caller, bool isOwnerOrEntryPoint) public {
-//     vm.assume(caller != address(0));
+    vm.startPrank(owner);
+    subExecutor.createSubscription(address(initiator), paymentAmount, paymentIntervalDays * 1 days, validUntil, address(token));
+    vm.stopPrank();
 
-//     if (isOwnerOrEntryPoint) {
-//         // Simular que el llamante es el propietario o el punto de entrada
-//         vm.prank(getKernelStorage().owner);
-//         subExecutor.createSubscription(address(initiator), 1 ether, 30 days, block.timestamp + 90 days, address(mockERC20));
-//     } else {
-//         // Simular que el llamante no es el propietario o el punto de entrada
-//         vm.prank(caller);
-//         vm.expectRevert("account: not from entrypoint or owner or self");
-//         subExecutor.createSubscription(address(initiator), 1 ether, 30 days, block.timestamp + 90 days, address(mockERC20));
-//     }
-// }
+    // Avanza el tiempo para cumplir con el intervalo de pago.
+    vm.warp(validAfter + paymentIntervalDays * 1 days + 1);
+
+    // Procesa el pago como el Initiator.
+    vm.prank(address(initiator));
+    subExecutor.processPayment();
+
+    // Verifica los balances después del pago.
+    uint256 subExecutorBalanceAfter = token.balanceOf(address(subExecutor));
+    uint256 initiatorBalanceAfter = token.balanceOf(address(initiator));
+
+    // Aserciones para verificar la transferencia correcta de tokens.
+    assertEq(subExecutorBalanceAfter, subExecutorBalanceBefore - paymentAmount, "SubExecutor's balance should decrease by the payment amount.");
+    assertEq(initiatorBalanceAfter, initiatorBalanceBefore + paymentAmount, "Initiator's balance should increase by the payment amount.");
+}
+
 
 }
