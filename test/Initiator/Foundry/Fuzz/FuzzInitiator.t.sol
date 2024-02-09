@@ -116,7 +116,6 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         amount = bound(amount, 1 ether, 1000 ether);
         paymentInterval = bound(paymentInterval, 1 days, 365 days);
 
-        // Registrar la suscripción
         vm.prank(subscriber);
         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(token));
 
@@ -128,7 +127,6 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         assertEq(sub.initiator, address(initiator));
         assertEq(sub.erc20Token, address(FalseToken));
         assertEq(sub.erc20TokensValid, FalseToken != address(0));
-        // Avanzar al momento en que la suscripción está activa pero no ha expirado
 
         initiator.getSubscription(subscriber);
         //in subExecutor
@@ -138,7 +136,6 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         uint256 warpToTime = _validAfter + 10;
         vm.warp(warpToTime);
 
-        // Intentar iniciar un pago
         vm.prank(subscriber);
         bool success;
         try initiator.initiatePayment(subscriber) {
@@ -148,6 +145,61 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         }
 
         assertTrue(success, "InitiatePayment call successful");
+    }
+
+/////////////////////////////////////////////////////////////////////////
+// 5. Error in storing all variables of the contract when attempting to interact 
+// with the initiatePayment function or related functions involving the SubExecutor contract. => Address(0)
+/////////////////////////////////////////////////////////////////////////
+    function test_Fuzz_Address0_InitiatePayment(
+        uint256 amount,
+        uint256 validUntilOffsetDays,
+        uint256 paymentIntervalDays,
+        uint256 tokenAmount,
+        address FalseToken
+    ) public {
+        // Ensure reasonable input values.
+        vm.assume(amount > 0 && amount <= 100 ether);
+        vm.assume(validUntilOffsetDays >= 1 && validUntilOffsetDays <= 365);
+        vm.assume(paymentIntervalDays >= 1 && paymentIntervalDays <= validUntilOffsetDays);
+        vm.assume(tokenAmount > amount && tokenAmount <= 1000 ether);
+        FalseToken = address(0);
+
+        address subscriber = deployer;
+        uint256 _validAfter = block.timestamp + 1 days;
+        uint256 validUntil = _validAfter + validUntilOffsetDays * 1 days;
+        uint256 paymentInterval = paymentIntervalDays * 1 days;
+
+        // Transfer tokens to the Initiator contract as part of the test setup.
+        uint256 tokenBalance = amount + tokenAmount;
+        vm.startPrank(deployer);
+        token.mint(address(subExecutor), tokenBalance);
+        vm.stopPrank();
+
+        // Approve Initiator to spend tokens on behalf of SubExecutor.
+        vm.startPrank(address(subExecutor));
+        token.approve(address(initiator), tokenBalance);
+        vm.stopPrank();
+
+        // Register the subscription with fuzzing parameters.
+        vm.prank(subscriber);
+        initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, address(FalseToken));
+        initiator.setSubExecutor(address(subExecutor));
+
+        // Advance to the time when the subscription is active but not expired.
+        uint256 warpToTime = _validAfter + (validUntilOffsetDays / 2) * 1 days; // Halfway to ensure it's active.
+        vm.warp(warpToTime);
+
+        // Attempt to initiate a payment as the subscriber.
+        vm.prank(subscriber);
+        bool success;
+        try initiator.initiatePayment(subscriber) {
+            success = true;
+        } catch {
+            success = false;
+        }
+
+        assertTrue(success, "The call to initiatePayment should have been successful");
     }
 
 /////////////////////////////////////////////////////////////////////////
