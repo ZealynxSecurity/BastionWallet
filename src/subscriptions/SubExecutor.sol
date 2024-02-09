@@ -103,21 +103,21 @@ contract SubExecutor is ReentrancyGuard {
         // console.log("Within processPayment" );
 
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
-        // emit DebugSubExecutor(block.timestamp,  sub.validAfter);
-        // emit DebugSubExecutor(block.timestamp,  sub.validUntil);
+        emit DebugSubExecutor(block.timestamp,  sub.validAfter);
+        emit DebugSubExecutor(block.timestamp,  sub.validUntil);
 
-        // console.log("============" );
-        // console.log("block.timestamp ",block.timestamp );
-        // console.log(">= validAfter ",sub.validAfter );
-        // console.log("============" );
+        console.log("============" );
+        console.log("block.timestamp ",block.timestamp );
+        console.log(">= validAfter ",sub.validAfter );
+        console.log("============" );
 
-        // console.log("block.timestamp ",block.timestamp );
-        // console.log("<= validUntil ", sub.validUntil);
-        // console.log("============" );
+        console.log("block.timestamp ",block.timestamp );
+        console.log("<= validUntil ", sub.validUntil);
+        console.log("============" );
 
-        // console.log("msg.sender ==",sub.initiator );
-        // console.log("============" );
-        // console.log("/////////////////////////////////////////" );
+        console.log("msg.sender ==",sub.initiator );
+        console.log("============" );
+        console.log("/////////////////////////////////////////" );
 
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");

@@ -337,7 +337,8 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         uint256 amount,
         uint256 _validUntil,
         uint256 paymentInterval,
-        address FalseToken) public {
+        address FalseToken,
+        uint256 tokenBalance) public {
 
         address subscriber = holders[0];
 
@@ -346,18 +347,30 @@ contract SHalmosSubExecutorTest is SymTest, Test {
         vm.assume (1 days <= _validUntil && _validUntil <= 365 days);
         vm.assume (FalseToken != address(token));
 
+        vm.assume(tokenBalance >= 1 ether && tokenBalance <= 1000 ether);
+
+        uint256 validAfter = block.timestamp;
         uint256 validUntil = block.timestamp + _validUntil;
         vm.assume(amount > 0 && paymentInterval > 0 && validUntil > block.timestamp);
 
-        // Registrar una suscripción
+        // Mint tokens to SubExecutor and set the allowance for Initiator.
+        vm.startPrank(subscriber);
+        token.mint(address(subExecutor), tokenBalance);
+        vm.stopPrank();
+
+        // SubExecutor approves Initiator to spend tokens on its behalf.
+        vm.startPrank(address(subExecutor));
+        token.approve(address(initiator), tokenBalance);
+        vm.stopPrank();
+
         vm.prank(subscriber);
         bool hasFailed = false;
         try initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken) {
-            // Intencionadamente vacío, esperando que no haya revert
+
         } catch {
-            hasFailed = true; // Se ha detectado un fallo
+            hasFailed = true; 
         }
-        // Aserción para verificar si hubo un fallo
+
         if (hasFailed) {
             fail("La llamada a registerSubscription ha revertido de manera inesperada.");
         }
@@ -378,8 +391,8 @@ contract SHalmosSubExecutorTest is SymTest, Test {
 // vm.warp(svm.createUint(64, "timestamp2"))
 
         // Intentar iniciar un pago (no debería fallar)
-        vm.prank(subscriber);
         bool success;
+        vm.prank(address(initiator));
         try subExecutor.processPayment() {
             success = true;
         } catch {
