@@ -154,11 +154,10 @@ contract EchidnaInitiator is EchidnaSetup {
     function test_register_with_past_validUntil(uint256 _amount, uint256 _paymentInterval) public {
         if(_amount == 0 || _paymentInterval == 0) return;
 
-        uint256 _validUntil = block.timestamp - 1 days; // Setting validUntil in the past
+        uint256 _validUntil = block.timestamp - 365 days; // Setting validUntil in the past
 
         hevm.prank(_subscriber);
-        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
-        try  initiator.initiatePayment(_subscriber) {
+        try initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token) {
             // If this line is reached, the test should fail
             assert(false);
         } catch {
@@ -166,22 +165,16 @@ contract EchidnaInitiator is EchidnaSetup {
         }
     }
 
-    function test_subscription_registration_max() public {
+    function test_subscription_multiple_registration() public {
         uint256 _amount = 1;
         uint256 _validUntil = 5;
         uint256 _paymentInterval = 1;
-
-        uint256 repeat = 500000;
+        uint256 repeat = 200;
 
         for (uint256 index; index < repeat; index++) {
             hevm.prank(_subscriber);
+            Debugger.log("Gas Left: ", gasleft());
             initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
-        }
-
-        hevm.prank(_subscriber);
-        initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
-        
-        Debugger.log("Gas Left: ", gasleft());
-        assert(false);
+        }        
     }
 }

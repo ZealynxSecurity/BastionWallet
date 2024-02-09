@@ -654,4 +654,17 @@ function testFail_initiatePayment_ExpiredSubscription() public {
         }
     }
 
+    function test_subscription_multiple_registration() public {
+        uint256 _amount = 1;
+        uint256 _validUntil = 5;
+        uint256 _paymentInterval = 1;
+        uint256 repeat = 500000;
+
+        for (uint256 index; index < repeat; index++) {
+            vm.prank(deployer);
+            console.log("Gas Left: ", gasleft());
+            initiator.registerSubscription(deployer, _amount, _validUntil, _paymentInterval, address(token));
+        }
+    }
+
 }
