@@ -5,7 +5,7 @@ import "./EchidnaConfig.sol";
 import "../MockERC20.sol";
 
 contract EchidnaSetup is EchidnaConfig {
-    MockERC20 public token;
+    MockERC20 internal token;
     address internal _erc20Token;
 
     constructor() {

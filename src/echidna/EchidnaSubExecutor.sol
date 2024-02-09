@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import "../../src/subscriptions/Initiator.sol";
 import "../subscriptions/SubExecutor.sol";
 import "./EchidnaSetup.sol";
-import "./Debugger.sol";
 
 contract EchidnaSubExecutor is EchidnaSetup {
     Initiator initiator;
-    SubExecutor public subExecutor;
-    address immutable public entryPoint;
-    address[] public allSubscribers;
-    address private deployer;
+    SubExecutor internal subExecutor;
+    address immutable internal entryPoint;
+    address[] internal allSubscribers;
+    address internal deployer;
 
     constructor() {
         subExecutor = new SubExecutor();

@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../subscriptions/Initiator.sol";
-import "../MockERC20.sol";
+import "../../src/subscriptions/Initiator.sol";
 import "./EchidnaSetup.sol";
-import "./Debugger.sol";
 
 contract EchidnaInitiator is EchidnaSetup {
-    Initiator public initiator;
-    address public _subscriber = msg.sender;
+    Initiator internal initiator;
+    address internal _subscriber;
 
     constructor() {
         initiator = new Initiator();
+        _subscriber = msg.sender;
     }
 
     // Tests various inputs for registering a subscription
     function test_subscription_registration(
-        uint256 _amount, 
+        uint256 _amount,
         uint256 _validUntil, 
         uint256 _paymentInterval
     ) public {
         // Assumptions to ensure valid inputs
         if(_amount == 0 || _paymentInterval == 0) return;
 
+        hevm.prank(_subscriber);
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
 
@@ -38,10 +38,13 @@ contract EchidnaInitiator is EchidnaSetup {
         // Test for subscription registration
         if(_amount == 0 || _paymentInterval == 0) return;
         // require(_validUntil > block.timestamp);
-        
 
+        hevm.prank(_subscriber);
         initiator.registerSubscription(_subscriber, _amount, _validUntil, _paymentInterval, _erc20Token);
+        
+        hevm.prank(_subscriber);
         initiator.removeSubscription(_subscriber);
+        
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
 
         // Checking if the subscription is effectively removed
@@ -99,6 +102,7 @@ contract EchidnaInitiator is EchidnaSetup {
         // Now the actual subscriber tries to remove the subscription
         hevm.prank(_subscriber);
         initiator.removeSubscription(_subscriber);
+        
         ISubExecutor.SubStorage memory sub = initiator.getSubscription(_subscriber);
         assert(sub.amount == 0);
     }
