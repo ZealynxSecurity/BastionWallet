@@ -200,11 +200,11 @@ contract EchidnaInitiator is EchidnaSetup {
     }
 
     // Test that initiatePayment reverts if block.timestamp is outside the valid range
-    function test_payment_validity_period(uint256 _amount, uint256 _paymentInterval) public {
-        if(_amount == 0 || _paymentInterval == 0) return;
+    function test_payment_valid(uint256 _amount, uint256 _paymentInterval, uint256 _timePayment) public {
+        uint256 _validUntil = block.timestamp + 10 days;
 
-        uint256 _validAfter = block.timestamp + 1 days;
-        uint256 _validUntil = _validAfter + 10 days;
+        if(_amount == 0 || _paymentInterval == 0) return;
+        if(block.timestamp < _timePayment || _timePayment > _validUntil) return;
 
         // Registering a subscription
         hevm.prank(_subscriber);
@@ -217,8 +217,8 @@ contract EchidnaInitiator is EchidnaSetup {
         );
 
         // Warp to a time within the valid range and ensure it doesn't revert
-        hevm.warp(_validAfter + 1);
         hevm.prank(_subscriber);
+        hevm.warp(_timePayment);
         try initiator.initiatePayment(_subscriber) {
             // Expected behavior, the transaction should succeed
             assert(true);
