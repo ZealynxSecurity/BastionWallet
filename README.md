@@ -1,31 +1,22 @@
-# Índice
+# Index
 
-- [Changes in Initiator and SubExecutor](#changes-in-initiator-and-subexecutor)
-  - [Which changes made and why](#which-changes-made-and-why)
-    - [Changes made in the Initiator contract](#changes-made-in-the-initiator-contract)
-    - [Changes made in the SubExecutor contract](#changes-made-in-the-subexecutor-contract)
-      - [function processPayment](#function-processpayment)
-      - [function _processERC20Payment](#function-_processerc20payment)
-- [Installation](#installation)
-- [Init](#init)
-- [Where to find the tests](#where-to-find-the-tests)
-- [Testing Environments](#testing-environments)
-  - [Foundry](#foundry)
-    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach)
-    - [Where are tests](#where-are-tests)
-    - [How to run them](#how-to-run-them)
-  - [Echidna](#echidna)
-    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-1)
-    - [Where are tests](#where-are-tests-1)
-    - [How to run them](#how-to-run-them-1)
-  - [Medusa](#medusa)
-    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-2)
-    - [Where are tests](#where-are-tests-2)
-    - [How to run them](#how-to-run-them-2)
-  - [Halmos](#halmos)
-    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-3)
-    - [Where are tests](#where-are-tests-3)
-    - [How to run them](#how-to-run-them-3)
+| Section                                      | Description                                          |
+| -------------------------------------------- | ---------------------------------------------------- |
+| [Changes in Initiator and SubExecutor](#changes-in-initiator-and-subexecutor) | Key changes in Initiator and SubExecutor contracts. |
+| [Installation](#installation)               | Steps for installing necessary tools.                |
+| [Init](#init)                               | Initial commands to set up the environment.          |
+| [Where to Find the Tests](#where-to-find-the-tests) | Where the tests are located in the repository.       |
+| [Testing Environments](#testing-environments) | Available testing environments and how to set them up. |
+
+## Testing Environments
+
+| Environment | Resources for Setup                                 | Location of Tests          | How to Run Them               |
+| ----------- | ---------------------------------------------------- | -------------------------- | ----------------------------- |
+| Foundry     | [Resources](#resources-to-set-up-environment-and-understand-approach) | [Tests](#where-are-tests)  | [Running](#how-to-run-them)   |
+| Echidna     | [Resources](#resources-to-set-up-environment-and-understand-approach-1) | [Tests](#where-are-tests-1)| [Running](#how-to-run-them-1) |
+| Medusa      | [Resources](#resources-to-set-up-environment-and-understand-approach-2) | [Tests](#where-are-tests-2)| [Running](#how-to-run-them-2) |
+| Halmos      | [Resources](#resources-to-set-up-environment-and-understand-approach-3) | [Tests](#where-are-tests-3)| [Running](#how-to-run-them-3) |
+
 
 # Changes in Initiator and SubExecutor
 
