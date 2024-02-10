@@ -8,7 +8,6 @@ import "../../../src/MockERC20.sol";
 import "../../../src/subscriptions/SubExecutor.sol";
 
 
-
 contract SetUpHalmosInitiatorTest is SymTest, Test {
     Initiator initiator;
     SubExecutor subExecutor;

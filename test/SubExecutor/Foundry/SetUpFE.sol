@@ -6,8 +6,6 @@ import "../../../src/subscriptions/SubExecutor.sol";
 import "../../../src/subscriptions/Initiator.sol";
 import "../../../src/MockERC20.sol";
 
-// import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-
 contract SetUp_FoundrySubExecutor is Test {
     Initiator initiator;
     SubExecutor subExecutor;
