@@ -2,7 +2,7 @@
 
 | Section                                      | Description                                          |
 | -------------------------------------------- | ---------------------------------------------------- |
-| [Report](#report) | [Report: Vulnerabilities found](https://hackmd.io/2bk3536VTtqR0qbgM4_OfA?view) |
+| [Report](#report) | [Vulnerabilities found](https://hackmd.io/2bk3536VTtqR0qbgM4_OfA?view) |
 | [Changes in Initiator and SubExecutor](#changes-in-initiator-and-subexecutor) | Key changes in Initiator and SubExecutor contracts. |
 | [Installation](#installation)               | Steps for installing necessary tools.                |
 | [Init](#init)                               | Initial commands to set up the environment.          |
