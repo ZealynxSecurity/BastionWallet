@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../SetUpFE.sol";
+import "../../../SetUp/SetUp_Foundry.sol";
 
-contract SFoundrySubExecutor_Unit_Test is SetUp_FoundrySubExecutor {
+contract SFoundrySubExecutor_Unit_Test is SetUp_Foundry {
 
 
 

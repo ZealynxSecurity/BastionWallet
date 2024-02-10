@@ -2,18 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../../../src/subscriptions/SubExecutor.sol";
-import "../../../src/subscriptions/Initiator.sol";
-import "../../../src/MockERC20.sol";
+import "../../src/subscriptions/Initiator.sol";
+import "../../src/MockERC20.sol";
+import "../../src/subscriptions/SubExecutor.sol";
 
-contract SetUp_FoundrySubExecutor is Test {
+
+contract SetUp_Foundry is Test {
     Initiator initiator;
-    SubExecutor subExecutor;
     MockERC20 public token;
 
     address public deployer;
     address[] public holders;
 
+    SubExecutor subExecutor;
 
     function setUp() public {
 
@@ -21,8 +22,9 @@ contract SetUp_FoundrySubExecutor is Test {
         vm.startPrank(deployer);
         
         initiator = new Initiator();
-        subExecutor = new SubExecutor();
         token = new MockERC20("Test Token", "TT");
+
+        subExecutor = new SubExecutor();
 
         uint256 supp = 100 ether;
         token.mint(deployer, supp);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../SetUpHS.sol";
+import "../../../SetUp/SetUp_Halmos.sol";
 
-contract HalmosSubExecutor_Fuzz_Test is SetUp_HalmosSubExecutor {
+contract HalmosSubExecutor_Fuzz_Test is SetUp_Halmos {
 
 
 /////////////////////////////////////////////////////////////////////////

@@ -2,29 +2,30 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../../../src/subscriptions/Initiator.sol";
-import "../../../src/MockERC20.sol";
-import "../../../src/subscriptions/SubExecutor.sol";
+import {SymTest} from "halmos-cheatcodes/SymTest.sol";
+import "../../src/subscriptions/Initiator.sol";
+import "../../src/MockERC20.sol";
+import "../../src/subscriptions/SubExecutor.sol";
 
 
-contract SetUp_F_Initiator is Test {
+contract SetUp_Halmos is SymTest, Test {
     Initiator initiator;
+    SubExecutor subExecutor;
     MockERC20 public token;
 
     address public deployer;
+
     address[] public holders;
 
-    SubExecutor subExecutor;
 
     function setUp() public {
 
-        deployer = makeAddr("deployer");
+        deployer = svm.createAddress("deployer");
         vm.startPrank(deployer);
         
         initiator = new Initiator();
-        token = new MockERC20("Test Token", "TT");
-
         subExecutor = new SubExecutor();
+        token = new MockERC20("Test Token", "TT");
 
         uint256 supp = 100 ether;
         token.mint(deployer, supp);

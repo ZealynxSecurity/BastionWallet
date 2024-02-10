@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../SeUpH.sol";
+import "../../../SetUp/SetUp_Halmos.sol";
 
 
-contract Halmos_Invariant_InitiatorTest is SetUpHalmosInitiatorTest {
+contract Halmos_Invariant_InitiatorTest is SetUp_Halmos {
 
 
 /////////////////////////////////////////////////////////////////////////

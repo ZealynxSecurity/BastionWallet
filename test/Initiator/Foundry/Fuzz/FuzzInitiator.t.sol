@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../SetUp.sol";
+import "../../../SetUp/SetUp_Foundry.sol";
 
 
-contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
+contract FoundryInitiator_Fuzz_Test is SetUp_Foundry {
 
 
 /////////////////////////////////////////////////////////////////////////
