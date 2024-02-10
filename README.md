@@ -228,11 +228,15 @@ forge test --mc SFoundrySubExecutor_Unit_Test
 
 ### How to run them
 
+#### Initiator
+
 - src/echidna/EchidnaInitiator.sol
 
 ```solidity
  echidna . --contract EchidnaInitiator --config config.yaml
 ```
+#### SubExecutor
+
 - src/echidna/EchidnaSubExecutor.sol
 
 ```solidity
@@ -254,6 +258,7 @@ forge test --mc SFoundrySubExecutor_Unit_Test
 
 ### How to run them
 
+#### Initiator
 
 - src/echidna/EchidnaInitiator.sol
 
@@ -269,6 +274,7 @@ To run Medusa with EchidnaInitiator, you need:
 ```solidity
 medusa fuzz
 ```
+#### SubExecutor
 
 - src/echidna/EchidnaSubExecutor.sol
 
