@@ -156,7 +156,7 @@ You can find the tests in various folders:
 - git submodule update --init --recursive
 - forge build
 
-- [Documentation[(https://book.getfoundry.sh/)
+- [Documentation](https://book.getfoundry.sh/)
 - [Create Invariant Tests for DeFi AMM Smart Contract](https://youtu.be/dWyJq8KGATg?si=JGYpABuOqR-1T6m3)
 
 ### Where are tests
