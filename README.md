@@ -1,3 +1,32 @@
+# Índice
+
+- [Changes in Initiator and SubExecutor](#changes-in-initiator-and-subexecutor)
+  - [Which changes made and why](#which-changes-made-and-why)
+    - [Changes made in the Initiator contract](#changes-made-in-the-initiator-contract)
+    - [Changes made in the SubExecutor contract](#changes-made-in-the-subexecutor-contract)
+      - [function processPayment](#function-processpayment)
+      - [function _processERC20Payment](#function-_processerc20payment)
+- [Installation](#installation)
+- [Init](#init)
+- [Where to find the tests](#where-to-find-the-tests)
+- [Testing Environments](#testing-environments)
+  - [Foundry](#foundry)
+    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach)
+    - [Where are tests](#where-are-tests)
+    - [How to run them](#how-to-run-them)
+  - [Echidna](#echidna)
+    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-1)
+    - [Where are tests](#where-are-tests-1)
+    - [How to run them](#how-to-run-them-1)
+  - [Medusa](#medusa)
+    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-2)
+    - [Where are tests](#where-are-tests-2)
+    - [How to run them](#how-to-run-them-2)
+  - [Halmos](#halmos)
+    - [Resources to set up environment and understand approach](#resources-to-set-up-environment-and-understand-approach-3)
+    - [Where are tests](#where-are-tests-3)
+    - [How to run them](#how-to-run-them-3)
+
 # Changes in Initiator and SubExecutor
 
 ## Which changes made and why
