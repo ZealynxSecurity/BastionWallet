@@ -158,7 +158,7 @@ sudo forge build -force
 ```
 
 ### You can find more information on this repository:
-#### - [Example implementation](https://github.com/scab24/FV-FUZZ/blob/main/testing-campaigns/Olas-protocol.md)
+- [Example implementation](https://github.com/scab24/FV-FUZZ/blob/main/testing-campaigns/Olas-protocol.md)
 
   
 ## Where to find the tests
