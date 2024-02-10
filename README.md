@@ -137,7 +137,30 @@ function processPayment() external nonReentrant {
         require(success, "Transfer failed");
         console.log("ERC20 payment processed from SubExecutor to Initiator");
     }
-``` 
+```
+
+## Installation
+
+To be able to use this repository, you need to have the following installed:
+
+- [Foundry]( https://book.getfoundry.sh/getting-started/installation)
+- [Halmos](https://github.com/a16z/halmos/tree/main)
+- [Echidna]( https://github.com/crytic/echidna?tab=readme-ov-file#installation)
+- [Medusa](https://github.com/crytic/medusa?tab=readme-ov-file#installation)
+
+## Init:
+
+```js
+ git submodule update --init --recursive
+```
+```js
+sudo forge build -force
+```
+
+### You can find more information on this repository:
+#### - [Example implementation](https://github.com/scab24/FV-FUZZ/blob/main/testing-campaigns/Olas-protocol.md)
+
+  
 ## Where to find the tests
 
 You can find the tests in various folders:
@@ -149,12 +172,10 @@ You can find the tests in various folders:
 
 # Testing Environments
 
+
 ## Foundry
 
 ### Resources to set up environment and understand approach
-
-- git submodule update --init --recursive
-- forge build
 
 - [Documentation](https://book.getfoundry.sh/)
 - [Create Invariant Tests for DeFi AMM Smart Contract](https://youtu.be/dWyJq8KGATg?si=JGYpABuOqR-1T6m3)
@@ -241,16 +262,23 @@ Para ejecutar Medusa con EchidnaInitiator necesitas:
 - Abrir el archivo medusa.json
 - Modificar el apartado:
   - "deploymentOrder": ["EchidnaInitiator"],
- <img width="425" alt="image" src="image/9.png">
 
-
-
+<img width="606" alt="image" src="image/1Medusa.png">
 
 
 ```solidity
 medusa fuzz
 ```
+
 - src/echidna/EchidnaSubExecutor.sol
+
+To run Medusa with EchidnaSubExecutor, you need:
+
+- Open the medusa.json file.
+- Modify the section:
+  - "deploymentOrder": ["EchidnaSubExecutor"],
+
+<img width="606" alt="image" src="image/2Medusa.png">
 
 ```solidity
 medusa fuzz    
@@ -260,13 +288,34 @@ medusa fuzz
 
 ### Resources to set up environment and understand approach
 
-- Enlace a la documentación oficial de Halmos o recursos relevantes.
-- Guía paso a paso para configurar el entorno de Halmos.
+- [CheatCode](https://github.com/a16z/halmos-cheatcodes)
+- [Documentation](https://github.com/a16z/halmos-cheatcodes)
+- [Formal Verification In Practice: Halmos, Hevm, Certora, and Ityfuzz](https://allthingsfuzzy.substack.com/p/formal-verification-in-practice-halmos?r=1860oo&utm_campaign=post&utm_medium=web)
+- [Examples](https://github.com/a16z/halmos/tree/main/examples)
 
 ### Where are tests
 
-Ubicación específica de los tests de Halmos en el repositorio o proyecto.
+- Halmos in the test/Initiator/Halmos and test/SubExecutor/Halmos folders
 
 ### How to run them
 
-Instrucciones para ejecutar los tests de Halmos, incluyendo comandos de terminal.
+#### Initiator
+
+- test/Initiator/Halmos/Fuzz/FuzzHalmos.t.sol
+  
+```solidity
+halmos --contract HalmosInitiatorTest --solver-timeout-assertion 0
+```
+```solidity
+halmos --contract HalmosInitiatorTest --function "x" --solver-timeout-assertion 0
+```
+
+#### SubExecutor
+
+- test/SubExecutor/Foundry/Fuzz/FuzzHalmosSubExecutor.t.sol
+```solidity
+halmos --contract HalmosSubExecutor_Fuzz_Test --solver-timeout-assertion 0
+```
+```solidity
+halmos --contract HalmosSubExecutor_Fuzz_Test --function "x" --solver-timeout-assertion 0
+```
