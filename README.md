@@ -218,6 +218,44 @@ forge test --mc SFoundrySubExecutor_Unit_Test
  echidna . --contract EchidnaSubExecutor --config config.yaml
 ```
 
+
+## Medusa
+
+### Resources to set up environment and understand approach
+
+- [Documentation](https://github.com/crytic/medusa)
+- [Properties](https://github.com/crytic/properties)
+- [echidna](https://github.com/crytic/echidna)
+
+### Where are tests
+
+- Echidna and Medusa in the src/echidna folder
+
+### How to run them
+
+
+- src/echidna/EchidnaInitiator.sol
+
+Para ejecutar Medusa con EchidnaInitiator necesitas:
+
+- Abrir el archivo medusa.json
+- Modificar el apartado:
+  - "deploymentOrder": ["EchidnaInitiator"],
+ <img width="425" alt="image" src="image/9.png">
+
+
+
+
+
+```solidity
+medusa fuzz
+```
+- src/echidna/EchidnaSubExecutor.sol
+
+```solidity
+medusa fuzz    
+```
+
 ## Halmos
 
 ### Resources to set up environment and understand approach
