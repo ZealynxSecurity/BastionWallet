@@ -257,10 +257,10 @@ forge test --mc SFoundrySubExecutor_Unit_Test
 
 - src/echidna/EchidnaInitiator.sol
 
-Para ejecutar Medusa con EchidnaInitiator necesitas:
+To run Medusa with EchidnaInitiator, you need:
 
-- Abrir el archivo medusa.json
-- Modificar el apartado:
+- Open the medusa.json file.
+- Modify the section:
   - "deploymentOrder": ["EchidnaInitiator"],
 
 <img width="606" alt="image" src="image/1Medusa.png">
