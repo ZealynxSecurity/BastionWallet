@@ -132,11 +132,10 @@ contract SubExecutor is ReentrancyGuard {
             require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Paco interval not yet reached");
         }
 
-        // Antes de intentar añadir un nuevo PaymentRecord
-        // console.log("Attempting to add a new PaymentRecord for", msg.sender);
-        // console.log("Payment amount:", sub.amount);
-        // console.log("Current timestamp:", block.timestamp);
-        // console.log("Subscriber:", sub.subscriber);
+        console.log("Attempting to add a new PaymentRecord for", msg.sender);
+        console.log("Payment amount:", sub.amount);
+        console.log("Current timestamp:", block.timestamp);
+        console.log("Subscriber:", sub.subscriber);
 
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
         // console.log("PaymentRecord added for", msg.sender);
@@ -169,7 +168,8 @@ contract SubExecutor is ReentrancyGuard {
         console.log("Allowance for Initiator to spend SubExecutor's tokens:", allowance);
         require(allowance >= sub.amount, "Insufficient allowance");
 
-        token.transfer(sub.initiator, sub.amount);
+        (bool success) = token.transfer(sub.initiator, sub.amount);
+        require(success, "Transfer failed");
         console.log("ERC20 payment processed from SubExecutor to Initiator");
     }
     function _processNativePayment(SubStorage storage sub) internal {
