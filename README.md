@@ -2,6 +2,7 @@
 
 | Section                                      | Description                                          |
 | -------------------------------------------- | ---------------------------------------------------- |
+| [REPORT](#report) | [Report: Vulnerabilities found](https://hackmd.io/2bk3536VTtqR0qbgM4_OfA?view) |
 | [Changes in Initiator and SubExecutor](#changes-in-initiator-and-subexecutor) | Key changes in Initiator and SubExecutor contracts. |
 | [Installation](#installation)               | Steps for installing necessary tools.                |
 | [Init](#init)                               | Initial commands to set up the environment.          |
@@ -16,6 +17,12 @@
 | Echidna     | [Resources](#resources-to-set-up-environment-and-understand-approach-1) | [Tests](#where-are-tests-1)| [Running](#how-to-run-them-1) |
 | Medusa      | [Resources](#resources-to-set-up-environment-and-understand-approach-2) | [Tests](#where-are-tests-2)| [Running](#how-to-run-them-2) |
 | Halmos      | [Resources](#resources-to-set-up-environment-and-understand-approach-3) | [Tests](#where-are-tests-3)| [Running](#how-to-run-them-3) |
+
+
+
+
+# REPORT
+[Report: Vulnerabilities found](https://hackmd.io/2bk3536VTtqR0qbgM4_OfA?view)
 
 
 # Changes in Initiator and SubExecutor
