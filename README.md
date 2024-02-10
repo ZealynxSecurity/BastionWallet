@@ -1,66 +1,234 @@
+# Changes in Initiator and SubExecutor
+
+## Which changes made and why
+
+
+### Changes made in the Initiator contract:
+
+
+- We have provided a test function solely for instantiating the SubExecutor contract and ensuring that the call to it is correct.
+
+```solidity
+    ISubExecutor public subExecutor;
+
+    function setSubExecutor(address _subExecutorAddress) external  {
+        subExecutor = ISubExecutor(_subExecutorAddress);
+        console.log("OK setSubExecutor");
+    }
+```
+
+- We have included multiple logs to retrieve values at each interaction, allowing us to identify where the test passes and where it does not.
+- Additionally, these logs have been utilized to track the flawless execution of the function up to a certain point and to visualize all the values.
+- We have updated the interface to **subExecutor.processPayment();** to ensure correct interaction with the contract.
+
+```solidity
+    function initiatePayment(address _subscriber) public nonReentrant {
+        ISubExecutor.SubStorage storage subscription = subscriptionBySubscriber[_subscriber];
+
+        console.log("============" );
+        console.log("validUntil ",subscription.validUntil);
+        console.log("> block.timestamp",block.timestamp );
+        console.log("============" );
+
+        console.log("validAfter ",subscription.validAfter );
+        console.log("< block.timestamp",block.timestamp );
+        console.log("============" );
+
+        console.log("amount > 0? =>",subscription.amount );
+        console.log("============" );
+
+        console.log("paymentInterval > 0? =>",subscription.paymentInterval );
+        console.log("============" );
+        console.log("/////////////////////////////////////////" );
+
+        require(subscription.validUntil > block.timestamp, "Subscription is not active");
+        require(subscription.validAfter < block.timestamp, "Subscription is not active");
+        require(subscription.amount > 0, "Subscription amount is 0");
+        require(subscription.paymentInterval > 0, "Payment interval is 0");
+
+        console.log("THE CALL HAS PASSED ALL REQUIREMENTS" );
+
+
+        // uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
+        // if (lastPaid != 0) {
+        //     require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
+        // }
+        
+        subExecutor.processPayment();
+    }
+```
+
+### Changes made in the SubExecutor contract:
+
+#### function processPayment
+
+- We have included multiple logs to retrieve values at each interaction, allowing us to identify where the test passes and where it does not.
+- Additionally, these logs have been utilized to track the flawless execution of the function up to a certain point and to visualize all the values.
+
+```solidity
+function processPayment() external nonReentrant {
+        console.log("Within processPayment" );
+
+        SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
+        emit DebugSubExecutor(block.timestamp,  sub.validAfter);
+        emit DebugSubExecutor(block.timestamp,  sub.validUntil);
+
+        console.log("============" );
+        console.log("block.timestamp ",block.timestamp );
+        console.log(">= validAfter ",sub.validAfter );
+        console.log("============" );
+
+        console.log("block.timestamp ",block.timestamp );
+        console.log("<= validUntil ", sub.validUntil);
+        console.log("============" );
+
+        console.log("msg.sender ==",sub.initiator );
+        console.log("============" );
+        console.log("/////////////////////////////////////////" );
+
+        require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
+        require(block.timestamp <= sub.validUntil, "Subscription expired");
+        require(msg.sender == sub.initiator, "Only the initiator can initiate payments");
+        
+        //Check when the last payment was done
+        PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[msg.sender];
+        if (paymentHistory.length > 0) {
+            PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
+            require(block.timestamp >= lastPayment.timestamp + sub.paymentInterval, "Payment interval not yet reached");
+        } else {
+            require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Paco interval not yet reached");
+        }
+
+        console.log("Attempting to add a new PaymentRecord for", msg.sender);
+        console.log("Payment amount:", sub.amount);
+        console.log("Current timestamp:", block.timestamp);
+        console.log("Subscriber:", sub.subscriber);
+
+        getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
+        // console.log("PaymentRecord added for", msg.sender);
+        //Check whether it's a native payment or ERC20 or ERC721
+        if (sub.erc20TokensValid) {
+            _processERC20Payment(sub);
+        } else {
+            _processNativePayment(sub);
+        }
+
+        emit paymentProcessed(msg.sender, sub.amount);
+    }
+```
+
+#### function _processERC20Payment
+
+- We have added logs within this function to verify the user's balance and permissions before calling transferFrom.
+- Furthermore, we have replaced transferFrom with transfer due to its behavior.
+
+```solidity
+    function _processERC20Payment(SubStorage storage sub) internal {
+        IERC20 token = IERC20(sub.erc20Token);
+        uint256 balance = token.balanceOf(address(this));
+        console.log("ERC20 Token balance of SubExecutor:", balance);
+        require(balance >= sub.amount, "Insufficient token balance");
+
+        uint256 allowance = token.allowance(address(this), sub.initiator);
+        console.log("Allowance for Initiator to spend SubExecutor's tokens:", allowance);
+        require(allowance >= sub.amount, "Insufficient allowance");
+
+        (bool success) = token.transfer(sub.initiator, sub.amount);
+        require(success, "Transfer failed");
+        console.log("ERC20 payment processed from SubExecutor to Initiator");
+    }
+``` 
+## Where to find the tests
+
+You can find the tests in various folders:
+
+- Echidna and Medusa in the src/echidna folder
+- Foundry in the test/Initiator/Foundry and test/SubExecutor/Foundry folders
+- Halmos in the test/Initiator/Halmos and test/SubExecutor/Halmos folders
+- Setup for Foundry and Halmos in the test/SetUp folder
+
+# Testing Environments
+
 ## Foundry
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+### Resources to set up environment and understand approach
 
-Foundry consists of:
+- git submodule update --init --recursive
+- forge build
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- [Documentation[(https://book.getfoundry.sh/)
+- [Create Invariant Tests for DeFi AMM Smart Contract](https://youtu.be/dWyJq8KGATg?si=JGYpABuOqR-1T6m3)
 
-## Documentation
+### Where are tests
 
-https://book.getfoundry.sh/
+- Foundry in the test/Initiator/Foundry and test/SubExecutor/Foundry folders
 
-## Usage
+### How to run them
 
-### Build
+#### Initiator
 
-```shell
-$ forge build
+- test/Initiator/Foundry/Fuzz/FuzzInitiator.sol
+  
+```solidity
+forge test --mc FoundryInitiator_Fuzz_Test
+```
+- test/Initiator/Foundry/Unit/UnitInitiator.t.sol
+  
+```solidity
+forge test --mc FoundryInitiator_Unit_Test
+```
+#### SubExecutor
+
+- test/SubExecutor/Foundry/Fuzz/FuzzSubExecutor.t.sol
+```solidity
+forge test --mc SFoundrySubExecutor_Fuzz_Test
+```
+- test/SubExecutor/Foundry/Unit/UnitSubExecutor.t.sol
+  
+```solidity
+forge test --mc SFoundrySubExecutor_Unit_Test
 ```
 
-### Test
 
-```shell
-$ forge test
+## Echidna
+
+### Resources to set up environment and understand approach
+
+- [Documentation](https://secure-contracts.com/index.html)
+- [Properties](https://github.com/crytic/properties)
+- [echidna](https://github.com/crytic/echidna)
+- [Echidna Tutorial: #2 Fuzzing with Assertion Testing Mode](https://www.youtube.com/watch?v=em8xXB9RHi4&ab_channel=bloqarl)
+- [Echidna Tutorial: #1 Introduction to create Invariant tests with Solidity](https://www.youtube.com/watch?v=yUC3qzZlCkY&ab_channel=bloqarl)
+
+
+### Where are tests
+
+- Echidna and Medusa in the src/echidna folder
+
+### How to run them
+
+- src/echidna/EchidnaInitiator.sol
+
+```solidity
+ echidna . --contract EchidnaInitiator --config config.yaml
+```
+- src/echidna/EchidnaSubExecutor.sol
+
+```solidity
+ echidna . --contract EchidnaSubExecutor --config config.yaml
 ```
 
-### Format
+## Halmos
 
-```shell
-$ forge fmt
-```
+### Resources to set up environment and understand approach
 
-### Gas Snapshots
+- Enlace a la documentación oficial de Halmos o recursos relevantes.
+- Guía paso a paso para configurar el entorno de Halmos.
 
-```shell
-$ forge snapshot
-```
+### Where are tests
 
-### Anvil
+Ubicación específica de los tests de Halmos en el repositorio o proyecto.
 
-```shell
-$ anvil
-```
+### How to run them
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Instrucciones para ejecutar los tests de Halmos, incluyendo comandos de terminal.
