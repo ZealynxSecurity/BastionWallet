@@ -11,7 +11,7 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
 // registerSubscription
 /////////////////////////////////////////////////////////////////////////
 
-    function test_check_testRegisterSubscriptionFuzz(
+    function test_Fuzz_RegisterSubscription(
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
@@ -43,13 +43,13 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
 // removeSubscription
 /////////////////////////////////////////////////////////////////////////
 
-    function test_check_testFUZZ_remove(
+    function test_Fuzz_removeSubscription(
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
         uint256 _paymentInterval,
-        address _erc20Token) public {
-
+        address _erc20Token
+    ) public {
         vm.assume(_amount > 0 && _paymentInterval > 0);
         vm.startPrank(_subscriber);
 
@@ -81,9 +81,8 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         uint256 amount,
         uint256 _validUntil,
         uint256 paymentInterval,
-        address FalseToken) public {
-
-
+        address FalseToken
+    ) public {
         address subscriber = holders[0];
         amount = bound(amount, 1 ether, 1000 ether);
         paymentInterval = bound(paymentInterval, 1 days, 365 days);
@@ -96,19 +95,17 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
         vm.prank(subscriber);
         vm.expectRevert();
         initiator.registerSubscription(subscriber, amount, validUntil, paymentInterval, FalseToken);
-
     }
 
 /////////////////////////////////////////////////////////////////////////
 // 5. Error in storing all variables of the contract when attempting to interact 
 // with the initiatePayment function or related functions involving the SubExecutor contract.
 /////////////////////////////////////////////////////////////////////////
-    function test_Fuzz_tinitiatePayment_ActiveSubscription(        
+    function test_Fuzz_initiatePayment_ActiveSubscription(        
         uint256 amount,
         uint256 paymentInterval,
-        address FalseToken) public {
-
-
+        address FalseToken
+    ) public {
         address subscriber = holders[0];
         uint256 _validAfter = block.timestamp + 1 days;
         uint256 validUntil = _validAfter + 10 days;
@@ -313,9 +310,7 @@ contract FoundryInitiator_Fuzz_Test is SetUp_F_Initiator {
 
         for (uint256 index; index < repeat; index++) {
             vm.prank(deployer);
-            console.log("Gas Left: ", gasleft());
             initiator.registerSubscription(deployer, _amount, _validUntil, _paymentInterval, address(token));
         }
     }
-
 }
